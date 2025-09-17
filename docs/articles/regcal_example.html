@@ -16,7 +16,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RegCalReliab</a>
 
@@ -38,7 +38,9 @@
 </li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Lbw080526/RegCalReliab"><span class="fa fab fa-github"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
       </ul>
 </div>
 
@@ -80,7 +82,7 @@ Results are compared between naïve analyses (ignoring measurement error)
 and regression calibration, highlighting the bias correction and
 improved inference provided by the method.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">RegCalReliab</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lbw080526.github.io/RegCalReliab/">RegCalReliab</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="data-simulation-for-external">Data Simulation for External<a class="anchor" aria-label="anchor" href="#data-simulation-for-external"></a>
@@ -443,9 +445,9 @@ interval coverage.</p>
 <p>– Regression calibration corrects for the bias, yielding average
 estimates closer to the true odds ratio.</p>
 <p>– Coverage probabilities of the 95% confidence intervals for
-regression calibration are close to the nominal level (~95%), indicating
-that the method recovers valid inference under both external and
-internal reliability designs.</p>
+regression calibration are close to the nominal level (~ 95%),
+indicating that the method recovers valid inference under both external
+and internal reliability designs.</p>
 <p>Overall, the document demonstrates that regression calibration is an
 effective and practical method for addressing measurement error in
 regression models, and the RegCalReliab package provides a unified
