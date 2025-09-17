@@ -27,5 +27,5 @@ install_github("Lbw080526/RegCalReliab")
 
 For detailed examples and usage of the GCFPCA package, please refer to
 the vignette available on the [pkgdown
-website](https://yulu98.github.io/GCFPCA/articles/gcfpca.html).
-# RegCalReliab
+website](https://lbw080526.github.io/RegCalReliab/articles/regcal_example.html).
+
