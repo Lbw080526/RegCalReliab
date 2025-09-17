@@ -3,7 +3,7 @@ pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
   regcal_example: regcal_example.html
-last_built: 2025-09-17T20:06Z
+last_built: 2025-09-17T20:14Z
 urls:
   reference: https://lbw080526.github.io/RegCalReliab/reference
   article: https://lbw080526.github.io/RegCalReliab/articles
