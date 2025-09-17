@@ -359,7 +359,7 @@ Key findings from the simulations:
 
 -- Regression calibration corrects for the bias, yielding average estimates closer to the true odds ratio.
 
--- Coverage probabilities of the 95% confidence intervals for regression calibration are close to the nominal level (~95%), indicating that the method recovers valid inference under both external and internal reliability designs.
+-- Coverage probabilities of the 95% confidence intervals for regression calibration are close to the nominal level (~ 95%), indicating that the method recovers valid inference under both external and internal reliability designs.
 
 Overall, the document demonstrates that regression calibration is an effective and practical method for addressing measurement error in regression models, and the RegCalReliab package provides a unified framework for implementation in both external and internal reliability studies.
 
