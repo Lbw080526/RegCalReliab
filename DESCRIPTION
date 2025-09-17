@@ -1,0 +1,17 @@
+Package: RegCalReliab
+Type: Package
+Title: RegCalReliab
+Version: 0.0.0.2
+Authors@R: person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", role = c("aut", "cre"))
+Description: User friendly R package realizing Carroll's method.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+    stats,
+    sandwich
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

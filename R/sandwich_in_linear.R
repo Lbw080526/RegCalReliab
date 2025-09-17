@@ -1,0 +1,394 @@
+#' Sandwich Variance Estimator for Internal Linear Regression
+#'
+#' Computes robust (sandwich) variance-corrected coefficient estimates for
+#' linear regression models when replicate exposure measurements are
+#' available internally (i.e., within the same main study). Accounts for
+#' measurement error by partitioning within- and between-subject variability
+#' using replicate data, and corrects standard errors via the full sandwich
+#' covariance estimator.
+#'
+#' @param xhat Matrix of regression-calibrated predictors for the main study.
+#' @param zbar Matrix of subject-level averaged standardized exposures.
+#' @param z.std List of standardized replicate exposure matrices.
+#' @param r Integer vector of replicate counts per subject.
+#' @param Y Continuous outcome vector.
+#' @param v12star Calibration submatrix (between-person exposure block).
+#' @param beta.fit2 Estimated regression coefficients from the corrected linear model.
+#' @param W.std Optional standardized covariate matrix; default \code{NULL}.
+#' @param sigma Within-person covariance matrix of replicate exposures.
+#' @param sigmawithin Estimated within-person covariance matrix.
+#' @param sigmazstar Total covariance matrix of standardized exposures (and covariates if present).
+#' @param sigmazhat Subject-specific estimated covariance matrices of exposures.
+#' @param sdz Vector of standard deviations used for exposure standardization.
+#' @param sdw Optional vector of standard deviations used for covariate standardization.
+#' @param muz Mean(s) of exposures used in standardization.
+#' @param muw Optional mean(s) of covariates used in standardization.
+#' @param fit2 Fitted linear regression model object from the calibration step.
+#' @param v Normalization constant used in the variance scaling step.
+#'
+#' @return A list containing:
+#' \item{Sandwich Corrected estimates}{Coefficient table with regression-calibrated
+#'   estimates, robust (sandwich) standard errors, t-statistics, 95% confidence intervals, and
+#'   standardized coefficients.}
+#'
+#' @details
+#' This function applies the sandwich variance estimator for linear regression models with
+#' repeated exposure measurements. It accounts for measurement error in the exposures using
+#' the regression calibration method, and robust standard errors are computed using the sandwich
+#' covariance estimator. The method handles within- and between-subject variability by constructing
+#' partial derivative matrices based on the replicate measurements, and adjusting the variance-covariance
+#' matrix accordingly.
+#'
+#' @noRd
+#' @export
+#' @importFrom stats lm pnorm
+
+
+
+sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std = NULL,sigma,
+                                       sigmawithin,sigmazstar,sigmazhat, sdz,sdw,muz,muw,fit2,v){
+
+  # -----------------------------------------------
+  # 0) Basic dimensions
+  # -----------------------------------------------
+  n = length(r)
+  t = length(z.std)
+  q = if (is.null(W.std)) 0 else ncol(W.std)
+
+  muz_std <- colMeans(zbar, na.rm = TRUE)  # length t
+
+  if (!is.null(W.std)) {
+    muw_std <- colMeans(W.std, na.rm = TRUE)  # length q
+  } else {
+    muw_std <- NULL
+  }
+
+  if(is.null(W.std)){
+
+    #p = as.vector(exp(beta.fit2 %*% t(cbind(1,xhat)))/(1+exp(beta.fit2 %*% t(cbind(1,xhat)))))
+    mu1    <- as.vector(cbind(1, xhat) %*% beta.fit2)
+    resid <- Y - mu1
+
+    sigmaz.inv = solve(sigmazstar)
+
+    Z = t(cbind(zbar))
+
+    m = matrix(0,nrow = t,ncol = t)
+    c = matrix(0,nrow = t,ncol = t)
+
+    ### sigmax
+    ###diag
+    ddv.x = sapply(1:t,function(x){
+      a = rep(0,t)
+      a[x] = a[x]+1
+      diag(a)
+    },simplify = F)
+    ddm.x = sapply(1:t,function(x){
+      a = rep(0,t)
+      a[x] = a[x]+1
+      diag(a)
+    },simplify = F)
+    db.x = sapply(1:t,function(x) t(sapply(1:n,function(y) (ddv.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t))-
+                                                              v12star%*%solve(matrix(sigmazhat[,y],ncol=t))%*%ddm.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t)))%*%Z[,y])),simplify = F)
+
+    ###off-diag
+    if(t>1){odv.x = sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+      c[x,y] = c[x,y]+1
+      c[y,x] = c[y,x]+1
+      c
+    },simplify = F),simplify = F)
+    odm.x = sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+      m[x,y] = m[x,y]+1
+      m[y,x] = m[y,x]+1
+      m
+    },simplify = F),simplify = F)
+    ob.x = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      t(sapply(1:n,function(u) (odv.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t))-
+                                  v12star%*%solve(matrix(sigmazhat[,u],ncol=t))%*%odm.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t)))%*%Z[,u])),simplify = F),simplify = F)
+    }
+
+    ### sigma
+    ###diag
+    db.0 = sapply(1:t,function(x) t(sapply(1:n, function(u) t((-ddv.x[[x]]%*%solve(matrix(sigmazhat[,u],ncol=t)))%*%(Z/r)[,u]))),simplify = F)
+
+    ###off-diag
+    if(t>1){ob.0 = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      t(sapply(1:n,function(u) t((-odv.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t)))%*%(Z/r)[,u]))),simplify = F),simplify = F)}
+
+    m = (t)*(t+1)/2+(t*(t+1))/2 #number of the covariance estimates
+    s = t+1 #number of beta estimates
+
+    B_big <- matrix(unlist(if (t>1) list(db.x,ob.x,db.0,ob.0) else list(db.x,db.0)),
+                    nrow = n, byrow = FALSE)
+
+    b <- lapply(seq_len(m), function(i)
+      B_big[, ((i - 1) * t + 1):(i * t), drop = FALSE])
+
+    #d = as.matrix(p*(1-p)%*%t(beta.fit2[2:(t+1)]))/n
+    d_linear = matrix(rep(beta.fit2[2:(t+1)], each = n),
+                      nrow = n, ncol = t, byrow = FALSE) / n
+
+    #bstar = sapply(b,function(x) -rowSums(x*d))
+    bstar = sapply(b, function(x) {
+      if (is.null(dim(x))) x <- matrix(x, nrow = n)  # <-- add this
+      -rowSums(x * d_linear)
+    })
+
+    a = matrix(NA,ncol=m,nrow=s)
+    a[1,] = colSums(bstar)
+    a[2:(t+1),] = t(apply(as.matrix(xhat), 2, function(x) colSums(x * bstar)))
+
+    #w = diag(p * (1 - p))
+    #Astar = t(cbind(1,xhat)) %*% w %*% cbind(1,xhat) /n
+    Astar <- crossprod(cbind(1, xhat)) / n
+
+
+    A = rbind(cbind(diag(rep(-1,m)),
+                    matrix(0,nrow=m,ncol=s)),cbind(a,Astar))
+    A = rbind(cbind(matrix(diag(rep(-1,t),nrow=t),t),matrix(0,nrow=t,ncol=m+s)),
+              cbind(matrix(0,nrow=m+s,ncol=t),A))
+
+    dmgi = sapply(1:(t),function(x) r*(((Z[x,])-muz_std[x]))/sum(r))
+    ###sigmas
+    ###diag
+
+    dgi = r*t(((Z-muz_std)^2-diag(sigmazstar))/v)
+
+    ###off-diag
+    if(t>1){ogi = sapply(1:(t-1),function(x) sapply((x+1):(t), function(y)
+      (r*((Z[x,]-muz_std[x])*((Z[y,]-muz_std[y])-sigmazstar[x,y]))/v)))}
+    ###within variance
+    ###diag
+    dgi.0 = if(t==1){
+      sapply(1:t,function(y) (rowSums((z.std[[y]]-zbar[,y])^2,na.rm = T)-sigma*(r-1))/sum(r-1))
+    }else sapply(1:t,function(y) (rowSums((z.std[[y]]-zbar[,y])^2,na.rm = T)-diag(sigma)[y]*(r-1))/sum(r-1))
+    ###off-diag
+    if(t>1){ogi.0 = sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
+      (rowSums((z.std[[x]]-zbar[,x])*(z.std[[y]]-zbar[,y]),na.rm = T)-sigma[x,y]*(r-1))/sum(r-1)))
+    }
+
+    ###betas
+    #gi.beta = cbind(1,xhat)*(Y-p) / n
+    gi.beta <- cbind(1, xhat) * resid / n
+
+
+    gi.1 = if(t==1){
+      cbind(dmgi,dgi,gi.beta)
+    }else cbind(dmgi,dgi,matrix(unlist(ogi),nrow=n),gi.beta)
+    B1 <- crossprod(gi.1)
+
+    gi.2 = if(t==1){
+      dgi.0
+    }else cbind(dgi.0,matrix(unlist(ogi.0),nrow=n))
+    B2   <- crossprod(gi.2)
+
+    m1 = (t)*(t+1)/2
+    m2 = t*(t+1)/2
+    B = rbind(cbind(B1[1:(t+m1),1:(t+m1)],matrix(0,t+m1,m2),B1[1:(t+m1),(t+m1+1):(t+m1+s)]),
+              cbind(matrix(0,m2,t+m1),B2,matrix(0,m2,s)),
+              cbind(B1[(t+m1+1):(t+m1+s),1:(t+m1)],matrix(0,s,m2),B1[(t+m1+1):(t+m1+s),(t+m1+1):(t+m1+s)]))
+
+    cov2 = solve(A)%*%B%*%t(solve(A))
+
+    idx_beta <- (t + m + 1):(t + m + s)                             # <<< FIX
+    tab3     <- summary(fit2)$coefficients
+    tab3[, 2] <- sqrt(diag(cov2)[idx_beta])
+    tab3[, 1:2] <- tab3[, 1:2] / c(1, sdz)
+    CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
+    CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
+    tab3[, 3] <- tab3[, 1] / tab3[, 2]
+    tab3[, 4] <- 2 * pnorm(tab3[, 3], lower.tail = FALSE)
+    tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
+    rownames(tab3) <- sub("^xhat", "", rownames(tab3))
+
+    return(list(`Sandwich Corrected estimates` = tab3))
+
+
+
+  } else{
+
+    #p = as.vector(exp(beta.fit2 %*% t(cbind(1,xhat,W.std)))/(1+exp(beta.fit2 %*% t(cbind(1,xhat,W.std)))))
+    mu1    <- as.vector(cbind(1, xhat, W.std) %*% beta.fit2)   # <<< FIX
+    resid <- Y - mu1                                           # <<< FIX
+    Z = t(cbind(zbar,W.std))
+
+    m = matrix(0,nrow = t+q,ncol = t+q)
+    c = matrix(0,nrow = t,ncol = t+q)
+
+    ### sigmax
+    ###diag
+    ddv.x = sapply(1:t,function(x){
+      a = rep(0,t)
+      a[x] = a[x]+1
+      cbind(diag(a),matrix(0,nrow = t,ncol = q))
+    },simplify = F)
+    ddm.x = sapply(1:t,function(x){
+      a = rep(0,t+q)
+      a[x] = a[x]+1
+      diag(a)
+    },simplify = F)
+    db.x = sapply(1:t,function(x) t(sapply(1:n,function(y) (ddv.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t+q))-
+                                                              v12star%*%solve(matrix(sigmazhat[,y],ncol=t+q))%*%ddm.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t+q)))%*%Z[,y])),simplify = F)
+
+    ###off-diag
+    if(t>1){odv.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+      c[x,y] = c[x,y]+1
+      c[y,x] = c[y,x]+1
+      c
+    },simplify = F),simplify = F)
+    odm.x = sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+      m[x,y] = m[x,y]+1
+      m[y,x] = m[y,x]+1
+      m
+    },simplify = F),simplify = F)
+
+    ob.x = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      t(sapply(1:n,function(u) (odv.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q))-
+                                  v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%odm.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u])),simplify = F),simplify = F)
+    }
+
+    ### sigmaxW
+    ### all off-diag
+    odv.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
+      c[x,y] = c[x,y]+1
+      c
+    },simplify = F),simplify = F)
+    odm.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
+      m[x,y] = m[x,y]+1
+      m[y,x] = m[y,x]+1
+      m
+    },simplify = F),simplify = F)
+
+    ob.xw = sapply(1:t,function(x) sapply(1:q,function(y)
+      t(sapply(1:n,function(u) t((odv.xw[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q))-
+                                    v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%odm.xw[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u]))),simplify = F),simplify = F)
+
+    ### sigmaW
+    ###diag
+    ddm.w = sapply((t+1):(t+q),function(x){
+      a = rep(0,t+q)
+      a[x] = a[x]+1
+      diag(a)
+    },simplify = F)
+    db.w = sapply(1:q,function(x)
+      t(sapply(1:n,function(u) t((-v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%ddm.w[[x]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u]))),simplify = F)
+
+    ###off-diag
+    if(q>1){odm.w<-sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
+      m[x,y] = m[x,y]+1
+      m[y,x] = m[y,x]+1
+      m
+    },simplify = F),simplify = F)
+    ob.w = sapply(1:(q-1),function(x) sapply(1:(q-x),function(y)
+      t(sapply(1:n,function(u) (-v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%odm.w[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u])),simplify = F),simplify = F)
+    }
+    ### sigma
+    ###diag
+    db.0 = sapply(1:t,function(x) t(sapply(1:n, function(u) t((-ddv.x[[x]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%(Z/r)[,u]))),simplify = F)
+
+    ###off-diag
+    if(t>1){ob.0 = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      t(sapply(1:n,function(u) t((-odv.x[[x]][[y]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%(Z/r)[,u]))),simplify = F),simplify = F)}
+
+    m = (t+q)*(t+q+1)/2+(t*(t+1))/2 #number of the covariance estimates
+    s = t+q+1 #number of beta estimates
+
+    B_big <- matrix(unlist(
+      if (t > 1 & q > 1)    list(db.x, db.w, ob.x, ob.xw, ob.w, db.0, ob.0) else
+        if (q > 1)            list(db.x, db.w, ob.xw, ob.w, db.0) else
+          if (t > 1)            list(db.x, db.w, ob.x, ob.xw, db.0, ob.0) else
+            list(db.x, db.w, ob.xw, db.0)
+    ), nrow = n, byrow = FALSE)
+
+    chunk <- t                                   # 关键：每块只要 t 列
+    stopifnot(ncol(B_big) %% chunk == 0)
+    m <- ncol(B_big) / chunk                     # （可选）若你前面定义的 m 不一致，就用这个覆盖
+    b <- lapply(seq_len(m), function(i)
+      B_big[, ((i - 1) * chunk + 1):(i * chunk), drop = FALSE]
+    )
+
+
+    #d = as.matrix(p*(1-p)%*%t(beta.fit2[2:(t+1)]))/n
+    d = matrix(rep(beta.fit2[2:(t+1)], each = n),
+               nrow = n, ncol = t, byrow = FALSE) / n
+
+    #bstar = sapply(b,function(x) -rowSums(x*d))
+    bstar = sapply(b, function(x) {
+      if (is.null(dim(x))) x <- matrix(x, nrow = n)  # <-- add this
+      -rowSums(x * d)
+    })
+
+    a = matrix(NA,ncol=m,nrow=s)
+    a[1,] = colSums(bstar)
+    a[2:(t+1),] = t(apply(as.matrix(xhat), 2, function(x) colSums(x * bstar)))
+    a[(t+2):(t+q+1),] = t(apply(as.matrix(W.std), 2, function(x) colSums(x * bstar)))
+
+    # w = diag(p * (1 - p))
+    # Astar = t(cbind(1,xhat, W.std)) %*% w %*% cbind(1,xhat, W.std)/n
+    Astar <- crossprod(cbind(1, xhat, W.std)) / n
+
+
+    A = rbind(cbind(diag(rep(-1,m)),
+                    matrix(0,nrow=m,ncol=s)),cbind(a,Astar))
+    A = rbind(cbind(diag(rep(-1,t+q),nrow=t+q),matrix(0,nrow=t+q,ncol=m+s)),
+              cbind(matrix(0,nrow=m+s,ncol=t+q),A))
+
+    ###sigmas
+    ###diag
+    mu  = c(muz_std, muw_std)
+    dmgi = sapply(1:(t+q),function(x) r*(Z[x,]-mu[x])/sum(r))
+
+    dgi = sapply(1:(t+q),function(x) (r*((Z[x,]-mu[x])^2-diag(sigmazstar)[x]))/v)
+    ###off-diag
+    ogi = sapply(1:(t+q-1),function(x) sapply((x+1):(t+q), function(y)
+      (r*((Z[x,]-mu[x])*(Z[y,]-mu[y])-sigmazstar[x,y]))/v))
+
+    ###within variance
+    ###diag
+    dgi.0 = if(t==1){
+      sapply(1:t,function(y) (rowSums((z.std[[y]]-zbar[,y])^2,na.rm = T)-sigma*(r-1))/sum(r-1))
+    }else sapply(1:t,function(y) (rowSums((z.std[[y]]-zbar[,y])^2,na.rm = T)-diag(sigma)[y]*(r-1))/sum(r-1))
+    ###off-diag
+    if(t>1){ogi.0 = sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
+      (rowSums((z.std[[x]]-zbar[,x])*(z.std[[y]]-zbar[,y]),na.rm = T)-sigma[x,y]*(r-1))/sum(r-1)))
+    }
+
+    ###betas
+    #gi.beta = cbind(1,xhat,W.std)*(Y-p)/n
+    gi.beta <- cbind(1, xhat, W.std) * resid / n
+
+    gi.1 = cbind(dmgi,dgi,matrix(unlist(ogi),nrow=n),gi.beta)
+    B1   <- crossprod(gi.1)
+
+    gi.2 = if(t==1){
+      dgi.0
+    }else cbind(dgi.0,matrix(unlist(ogi.0),nrow=n))
+    B2   <- crossprod(gi.2)
+
+    m1 = (t+q)*(t+q+1)/2
+    m2 = t*(t+1)/2
+    B = rbind(cbind(B1[1:(t+q+m1),1:(t+q+m1)],matrix(0,t+q+m1,m2),B1[1:(t+q+m1),(t+q+m1+1):(t+q+m1+s)]),
+              cbind(matrix(0,m2,t+q+m1),B2,matrix(0,m2,s)),
+              cbind(B1[(t+q+m1+1):(t+q+m1+s),1:(t+q+m1)],matrix(0,s,m2),B1[(t+q+m1+1):(t+q+m1+s),(t+q+m1+1):(t+q+m1+s)]))
+
+    cov2 = solve(A)%*%B%*%t(solve(A))
+
+    idx_beta <- (t + q + m + 1):(t + q + m + s)                       # <<< FIX
+    tab3     <- summary(fit2)$coefficients
+    tab3[, 2] <- sqrt(diag(cov2)[idx_beta])
+    tab3[, 1:2] <- tab3[, 1:2] / c(1, sdz, sdw)
+    CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
+    CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
+    tab3[, 3] <- tab3[, 1] / tab3[, 2]
+    tab3[, 4] <- 2 * pnorm(tab3[, 3], lower.tail = FALSE)
+    tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
+    rownames(tab3) <- sub("^xhat", "", rownames(tab3))
+    rownames(tab3) <- sub("^W\\.std",  "",       rownames(tab3))
+
+    return(list(`Sandwich Corrected estimates` = tab3))
+
+
+  }
+
+
+}
