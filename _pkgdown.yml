@@ -1,17 +1,4 @@
+url: https://lbw080526.github.io/RegCalReliab/
 template:
   bootstrap: 5
-  bootswatch: flatly
-
-home:
-  title: "RegCalReliab"
-  description: "Regression calibration for measurement error with reliability studies both internal and external."
-
-navbar:
-  structure:
-    left: [home, reference, articles, news]
-    right: [github]
-  components:
-    github:
-      icon: fab fa-github
-      href: https://github.com/Lbw080526/RegCalReliab
 

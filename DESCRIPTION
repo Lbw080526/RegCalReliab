@@ -15,3 +15,4 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+URL: https://lbw080526.github.io/RegCalReliab/
