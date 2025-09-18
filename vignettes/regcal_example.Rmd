@@ -20,14 +20,13 @@ The **RegCalReliab** package provides a unified framework for regression calibra
 
 This document demonstrates the use of **RegCalReliab** through simulation studies under a logistic regression model. We generate data with two error-prone exposures (z1, z2) and two error-free covariates (W1, W2), with a true odds ratio of 1.5 for each exposure. Results are compared between naïve analyses (ignoring measurement error) and regression calibration, highlighting the bias correction and improved inference provided by the method.
 
-
 ```{r setup}
 library(RegCalReliab)
 ```
 
 ## Data Simulation for External
 
-#1 Setup
+## 1. Setup
 
 In this section we load packages, fix the seed, and define helper functions. We set the true slope $\beta$ = log(1.5), corresponding to a true odds ratio (OR) of 1.5 for each error-prone exposure.
 
@@ -43,19 +42,19 @@ beta = log(1.5)
 OR_true = 1.5
 ```
 
-#2. One simulation replicate for External Logistic
+## 2. One simulation replicate for External Logistic
 
 A single call to simulate_once() generates one dataset and fits regression calibration.
 
--- The main study has 1500 subjects.
+-   The main study has 1500 subjects.
 
--- The external reliability study has 1500 subjects with 2, 3, or 4 replicates per subject (padded with NA).
+-   The external reliability study has 1500 subjects with 2, 3, or 4 replicates per subject (padded with NA).
 
--- Error-free covariates W1 (continuous) and W2 (binary) are included.
+-   Error-free covariates W1 (continuous) and W2 (binary) are included.
 
--- The outcome Y is generated under a logistic model with slope log(1.5) for both exposures.
+-   The outcome Y is generated under a logistic model with slope log(1.5) for both exposures.
 
--- We call RC_ExReliab() with link = "logistic" to obtain both naïve and corrected estimates.
+-   We call RC_ExReliab() with link = "logistic" to obtain both naïve and corrected estimates.
 
 ```{r}
 simulate_once = function() {
@@ -114,11 +113,11 @@ simulate_once = function() {
 }
 ```
 
-#3. 100 simulation replicate
+## 3. 100 simulation replicate
 
-We repeat the entire simulation 100 times. Each run returns a results object containing two tables: 
+We repeat the entire simulation 100 times. Each run returns a results object containing two tables:
 
-**uncorrected** = naïve logistic regression ignoring measurement error. 
+**uncorrected** = naïve logistic regression ignoring measurement error.
 
 **corrected** = regression calibration estimates adjusted for error.
 
@@ -131,7 +130,7 @@ naive_tabs = lapply(results_list, function(x) x$uncorrected)
 corrected_tabs = lapply(results_list, function(x) x$corrected)
 ```
 
-#4. Average estimates across simulations
+## 4. Average estimates across simulations
 
 We compute the Monte Carlo average of the parameter estimates across the 100 runs.
 
@@ -146,15 +145,15 @@ cat("\nAverage Corrected Logistic Estimates (B = ", B, "):\n", sep = "")
 print(round(avg_corrected, 5))
 ```
 
-#5. Coverage-rate (CR) calculation
+## 5. Coverage-rate (CR) calculation
 
 Finally, we evaluate whether the true OR = 1.5 lies within the 95% confidence intervals.
 
--- Coverage is computed as the percentage of simulation replicates whose CI covers the true OR.
+-   Coverage is computed as the percentage of simulation replicates whose CI covers the true OR.
 
--- Good coverage (~95%) indicates that the variance estimator is accurate.
+-   Good coverage (\~95%) indicates that the variance estimator is accurate.
 
--- Naïve estimates typically show attenuation bias and poor coverage, while corrected estimates should recover the true slope with coverage close to the nominal level.
+-   Naïve estimates typically show attenuation bias and poor coverage, while corrected estimates should recover the true slope with coverage close to the nominal level.
 
 ```{r}
 inside_ci = function(tab, i, truth = OR_true) {
@@ -183,10 +182,9 @@ cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z2_naive))
 cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z2_corr))
 ```
 
-
 ## Data Simulation for Internal
 
-#1 Setup
+## 1. Setup
 
 In this section we load packages, fix the seed, and define helper functions. We set the true slope $\beta$ = log(1.5), corresponding to a true odds ratio (OR) of 1.5 for each error-prone exposure.
 
@@ -202,15 +200,17 @@ beta = log(1.5)
 OR_true = 1.5
 ```
 
-
-#2 One simulation replicate for Internal Logistic
+## 2. One simulation replicate for Internal Logistic
 
 Here we generate one dataset with both main study and reliability information. Replicates are included in the same main_data frame.
 
--- x1, x2 are error-prone exposures with 1–4 replicates
--- W1 is a continuous error-free covariate
--- W2 is a binary covariate, dependent on x1
--- Y is generated from a logistic model with slope log(1.5)
+-   x1, x2 are error-prone exposures with 1–4 replicates
+
+-   W1 is a continuous error-free covariate
+
+-   W2 is a binary covariate, dependent on x1
+
+-   Y is generated from a logistic model with slope log(1.5)
 
 ```{r}
 simulate_once = function() {
@@ -271,16 +271,13 @@ simulate_once = function() {
 
 ```
 
+## 3. 100 simulation replicate
 
+We repeat the entire simulation 100 times. Each run returns a results object containing two tables:
 
-#3 100 simulation replicate
-
-We repeat the entire simulation 100 times. Each run returns a results object containing two tables: 
-
-**uncorrected** = naïve logistic regression ignoring measurement error. 
+**uncorrected** = naïve logistic regression ignoring measurement error.
 
 **corrected** = regression calibration estimates adjusted for error.
-
 
 ```{r}
 B = 100
@@ -291,7 +288,7 @@ naive_tabs = lapply(results_list, function(x) x$uncorrected)
 corrected_tabs = lapply(results_list, function(x) x$corrected)
 ```
 
-#4. Average estimates across simulations
+## 4. Average estimates across simulations
 
 We compute the Monte Carlo average of the parameter estimates across the 100 runs.
 
@@ -306,15 +303,15 @@ cat("\nAverage Corrected Logistic Estimates (B = ", B, "):\n", sep = "")
 print(round(avg_corrected, 5))
 ```
 
-#5. Coverage-rate (CR) calculation
+## 5. Coverage-rate (CR) calculation
 
 Finally, we evaluate whether the true OR = 1.5 lies within the 95% confidence intervals.
 
--- Coverage is computed as the percentage of simulation replicates whose CI covers the true OR.
+-   Coverage is computed as the percentage of simulation replicates whose CI covers the true OR.
 
--- Good coverage (~95%) indicates that the variance estimator is accurate.
+-   Good coverage (\~95%) indicates that the variance estimator is accurate.
 
--- Naïve estimates typically show attenuation bias and poor coverage, while corrected estimates should recover the true slope with coverage close to the nominal level.
+-   Naïve estimates typically show attenuation bias and poor coverage, while corrected estimates should recover the true slope with coverage close to the nominal level.
 
 ```{r}
 inside_ci = function(tab, i, truth = OR_true) {
@@ -343,25 +340,22 @@ cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z2_naive))
 cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z2_corr))
 ```
 
-
 ## Summary
+
 This document illustrates the use of the RegCalReliab package for regression calibration under measurement error in logistic regression models. Two study designs are demonstrated:
 
--- External reliability studies, where replicate measurements are collected on a separate sample.
+-   External reliability studies, where replicate measurements are collected on a separate sample.
 
--- Internal reliability studies, where replicates are collected within the main study.
+-   Internal reliability studies, where replicates are collected within the main study.
 
 In both cases, we simulate data with two error-prone exposures (z1, z2) and two error-free covariates (W1, W2). The true odds ratio for each exposure is set to 1.5.
 
 Key findings from the simulations:
 
--- Naïve logistic regression, which ignores measurement error, shows attenuation bias (estimates biased toward the null) and poor confidence interval coverage.
+-   Naïve logistic regression, which ignores measurement error, shows attenuation bias (estimates biased toward the null) and poor confidence interval coverage.
 
--- Regression calibration corrects for the bias, yielding average estimates closer to the true odds ratio.
+-   Regression calibration corrects for the bias, yielding average estimates closer to the true odds ratio.
 
--- Coverage probabilities of the 95% confidence intervals for regression calibration are close to the nominal level (~ 95%), indicating that the method recovers valid inference under both external and internal reliability designs.
+-   Coverage probabilities of the 95% confidence intervals for regression calibration are close to the nominal level (\~ 95%), indicating that the method recovers valid inference under both external and internal reliability designs.
 
 Overall, the document demonstrates that regression calibration is an effective and practical method for addressing measurement error in regression models, and the RegCalReliab package provides a unified framework for implementation in both external and internal reliability studies.
-
-
-
