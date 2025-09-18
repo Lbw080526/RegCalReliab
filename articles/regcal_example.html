@@ -87,7 +87,10 @@ improved inference provided by the method.</p>
 <div class="section level2">
 <h2 id="data-simulation-for-external">Data Simulation for External<a class="anchor" aria-label="anchor" href="#data-simulation-for-external"></a>
 </h2>
-<p>#1 Setup</p>
+</div>
+<div class="section level2">
+<h2 id="setup">1. Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+</h2>
 <p>In this section we load packages, fix the seed, and define helper
 functions. We set the true slope
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
@@ -105,18 +108,23 @@ error-prone exposure.</p>
 <span><span class="co"># True coefficient (on log-odds scale) and OR</span></span>
 <span><span class="va">beta</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1.5</span><span class="op">)</span></span>
 <span><span class="va">OR_true</span> <span class="op">=</span> <span class="fl">1.5</span></span></code></pre></div>
-<p>#2. One simulation replicate for External Logistic</p>
+</div>
+<div class="section level2">
+<h2 id="one-simulation-replicate-for-external-logistic">2. One simulation replicate for External Logistic<a class="anchor" aria-label="anchor" href="#one-simulation-replicate-for-external-logistic"></a>
+</h2>
 <p>A single call to simulate_once() generates one dataset and fits
 regression calibration.</p>
-<p>– The main study has 1500 subjects.</p>
-<p>– The external reliability study has 1500 subjects with 2, 3, or 4
-replicates per subject (padded with NA).</p>
-<p>– Error-free covariates W1 (continuous) and W2 (binary) are
-included.</p>
-<p>– The outcome Y is generated under a logistic model with slope
-log(1.5) for both exposures.</p>
-<p>– We call RC_ExReliab() with link = “logistic” to obtain both naïve
-and corrected estimates.</p>
+<ul>
+<li><p>The main study has 1500 subjects.</p></li>
+<li><p>The external reliability study has 1500 subjects with 2, 3, or 4
+replicates per subject (padded with NA).</p></li>
+<li><p>Error-free covariates W1 (continuous) and W2 (binary) are
+included.</p></li>
+<li><p>The outcome Y is generated under a logistic model with slope
+log(1.5) for both exposures.</p></li>
+<li><p>We call RC_ExReliab() with link = “logistic” to obtain both naïve
+and corrected estimates.</p></li>
+</ul>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">simulate_once</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># ---- True covariates ----</span></span>
@@ -172,7 +180,10 @@ and corrected estimates.</p>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>#3. 100 simulation replicate</p>
+</div>
+<div class="section level2">
+<h2 id="simulation-replicate">3. 100 simulation replicate<a class="anchor" aria-label="anchor" href="#simulation-replicate"></a>
+</h2>
 <p>We repeat the entire simulation 100 times. Each run returns a results
 object containing two tables:</p>
 <p><strong>uncorrected</strong> = naïve logistic regression ignoring
@@ -186,7 +197,10 @@ adjusted for error.</p>
 <span><span class="co"># Extract naive + corrected tables</span></span>
 <span><span class="va">naive_tabs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">results_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="va">uncorrected</span><span class="op">)</span></span>
 <span><span class="va">corrected_tabs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">results_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="va">corrected</span><span class="op">)</span></span></code></pre></div>
-<p>#4. Average estimates across simulations</p>
+</div>
+<div class="section level2">
+<h2 id="average-estimates-across-simulations">4. Average estimates across simulations<a class="anchor" aria-label="anchor" href="#average-estimates-across-simulations"></a>
+</h2>
 <p>We compute the Monte Carlo average of the parameter estimates across
 the 100 runs.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -214,16 +228,21 @@ the 100 runs.</p>
 <span><span class="co">#&gt; z2           0.39907    0.11638   3.43776  0.01553 1.50019 1.19418 1.88504</span></span>
 <span><span class="co">#&gt; W1           0.48707    0.09112   5.35650  0.00003 1.63355 1.36619 1.95351</span></span>
 <span><span class="co">#&gt; W2          -0.29554    0.17953  -1.64100  1.76609 0.75584 0.53191 1.07419</span></span></code></pre></div>
-<p>#5. Coverage-rate (CR) calculation</p>
+</div>
+<div class="section level2">
+<h2 id="coverage-rate-cr-calculation">5. Coverage-rate (CR) calculation<a class="anchor" aria-label="anchor" href="#coverage-rate-cr-calculation"></a>
+</h2>
 <p>Finally, we evaluate whether the true OR = 1.5 lies within the 95%
 confidence intervals.</p>
-<p>– Coverage is computed as the percentage of simulation replicates
-whose CI covers the true OR.</p>
-<p>– Good coverage (~95%) indicates that the variance estimator is
-accurate.</p>
-<p>– Naïve estimates typically show attenuation bias and poor coverage,
-while corrected estimates should recover the true slope with coverage
-close to the nominal level.</p>
+<ul>
+<li><p>Coverage is computed as the percentage of simulation replicates
+whose CI covers the true OR.</p></li>
+<li><p>Good coverage (~95%) indicates that the variance estimator is
+accurate.</p></li>
+<li><p>Naïve estimates typically show attenuation bias and poor
+coverage, while corrected estimates should recover the true slope with
+coverage close to the nominal level.</p></li>
+</ul>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inside_ci</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">tab</span>, <span class="va">i</span>, <span class="va">truth</span> <span class="op">=</span> <span class="va">OR_true</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">ci</span> <span class="op">=</span> <span class="va">tab</span><span class="op">[</span><span class="va">i</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CI.low"</span>, <span class="st">"CI.high"</span><span class="op">)</span><span class="op">]</span></span>
@@ -261,7 +280,10 @@ close to the nominal level.</p>
 <div class="section level2">
 <h2 id="data-simulation-for-internal">Data Simulation for Internal<a class="anchor" aria-label="anchor" href="#data-simulation-for-internal"></a>
 </h2>
-<p>#1 Setup</p>
+</div>
+<div class="section level2">
+<h2 id="setup-1">1. Setup<a class="anchor" aria-label="anchor" href="#setup-1"></a>
+</h2>
 <p>In this section we load packages, fix the seed, and define helper
 functions. We set the true slope
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
@@ -277,12 +299,18 @@ error-prone exposure.</p>
 <span><span class="co"># True slope and OR</span></span>
 <span><span class="va">beta</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1.5</span><span class="op">)</span></span>
 <span><span class="va">OR_true</span> <span class="op">=</span> <span class="fl">1.5</span></span></code></pre></div>
-<p>#2 One simulation replicate for Internal Logistic</p>
+</div>
+<div class="section level2">
+<h2 id="one-simulation-replicate-for-internal-logistic">2. One simulation replicate for Internal Logistic<a class="anchor" aria-label="anchor" href="#one-simulation-replicate-for-internal-logistic"></a>
+</h2>
 <p>Here we generate one dataset with both main study and reliability
 information. Replicates are included in the same main_data frame.</p>
-<p>– x1, x2 are error-prone exposures with 1–4 replicates – W1 is a
-continuous error-free covariate – W2 is a binary covariate, dependent on
-x1 – Y is generated from a logistic model with slope log(1.5)</p>
+<ul>
+<li><p>x1, x2 are error-prone exposures with 1–4 replicates</p></li>
+<li><p>W1 is a continuous error-free covariate</p></li>
+<li><p>W2 is a binary covariate, dependent on x1</p></li>
+<li><p>Y is generated from a logistic model with slope log(1.5)</p></li>
+</ul>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">simulate_once</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># ---- True covariates ----</span></span>
@@ -339,7 +367,10 @@ x1 – Y is generated from a logistic model with slope log(1.5)</p>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>#3 100 simulation replicate</p>
+</div>
+<div class="section level2">
+<h2 id="simulation-replicate-1">3. 100 simulation replicate<a class="anchor" aria-label="anchor" href="#simulation-replicate-1"></a>
+</h2>
 <p>We repeat the entire simulation 100 times. Each run returns a results
 object containing two tables:</p>
 <p><strong>uncorrected</strong> = naïve logistic regression ignoring
@@ -353,7 +384,10 @@ adjusted for error.</p>
 <span><span class="co"># Collect naïve + corrected tables</span></span>
 <span><span class="va">naive_tabs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">results_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="va">uncorrected</span><span class="op">)</span></span>
 <span><span class="va">corrected_tabs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">results_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="va">corrected</span><span class="op">)</span></span></code></pre></div>
-<p>#4. Average estimates across simulations</p>
+</div>
+<div class="section level2">
+<h2 id="average-estimates-across-simulations-1">4. Average estimates across simulations<a class="anchor" aria-label="anchor" href="#average-estimates-across-simulations-1"></a>
+</h2>
 <p>We compute the Monte Carlo average of the parameter estimates across
 the 100 runs.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -381,16 +415,21 @@ the 100 runs.</p>
 <span><span class="co">#&gt; myz2         0.39760    0.08593   4.62977  0.00093 1.49393 1.26225 1.76824</span></span>
 <span><span class="co">#&gt; W1           0.40044    0.07559   5.29969  0.00005 1.49629 1.29017 1.73539</span></span>
 <span><span class="co">#&gt; W2           0.41099    0.12687   3.24107  0.02646 1.52313 1.18781 1.95316</span></span></code></pre></div>
-<p>#5. Coverage-rate (CR) calculation</p>
+</div>
+<div class="section level2">
+<h2 id="coverage-rate-cr-calculation-1">5. Coverage-rate (CR) calculation<a class="anchor" aria-label="anchor" href="#coverage-rate-cr-calculation-1"></a>
+</h2>
 <p>Finally, we evaluate whether the true OR = 1.5 lies within the 95%
 confidence intervals.</p>
-<p>– Coverage is computed as the percentage of simulation replicates
-whose CI covers the true OR.</p>
-<p>– Good coverage (~95%) indicates that the variance estimator is
-accurate.</p>
-<p>– Naïve estimates typically show attenuation bias and poor coverage,
-while corrected estimates should recover the true slope with coverage
-close to the nominal level.</p>
+<ul>
+<li><p>Coverage is computed as the percentage of simulation replicates
+whose CI covers the true OR.</p></li>
+<li><p>Good coverage (~95%) indicates that the variance estimator is
+accurate.</p></li>
+<li><p>Naïve estimates typically show attenuation bias and poor
+coverage, while corrected estimates should recover the true slope with
+coverage close to the nominal level.</p></li>
+</ul>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inside_ci</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">tab</span>, <span class="va">i</span>, <span class="va">truth</span> <span class="op">=</span> <span class="va">OR_true</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">ci</span> <span class="op">=</span> <span class="va">tab</span><span class="op">[</span><span class="va">i</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CI.low"</span>, <span class="st">"CI.high"</span><span class="op">)</span><span class="op">]</span></span>
@@ -431,23 +470,27 @@ close to the nominal level.</p>
 <p>This document illustrates the use of the RegCalReliab package for
 regression calibration under measurement error in logistic regression
 models. Two study designs are demonstrated:</p>
-<p>– External reliability studies, where replicate measurements are
-collected on a separate sample.</p>
-<p>– Internal reliability studies, where replicates are collected within
-the main study.</p>
+<ul>
+<li><p>External reliability studies, where replicate measurements are
+collected on a separate sample.</p></li>
+<li><p>Internal reliability studies, where replicates are collected
+within the main study.</p></li>
+</ul>
 <p>In both cases, we simulate data with two error-prone exposures (z1,
 z2) and two error-free covariates (W1, W2). The true odds ratio for each
 exposure is set to 1.5.</p>
 <p>Key findings from the simulations:</p>
-<p>– Naïve logistic regression, which ignores measurement error, shows
+<ul>
+<li><p>Naïve logistic regression, which ignores measurement error, shows
 attenuation bias (estimates biased toward the null) and poor confidence
-interval coverage.</p>
-<p>– Regression calibration corrects for the bias, yielding average
-estimates closer to the true odds ratio.</p>
-<p>– Coverage probabilities of the 95% confidence intervals for
+interval coverage.</p></li>
+<li><p>Regression calibration corrects for the bias, yielding average
+estimates closer to the true odds ratio.</p></li>
+<li><p>Coverage probabilities of the 95% confidence intervals for
 regression calibration are close to the nominal level (~ 95%),
 indicating that the method recovers valid inference under both external
-and internal reliability designs.</p>
+and internal reliability designs.</p></li>
+</ul>
 <p>Overall, the document demonstrates that regression calibration is an
 effective and practical method for addressing measurement error in
 regression models, and the RegCalReliab package provides a unified
