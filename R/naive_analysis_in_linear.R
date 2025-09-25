@@ -27,10 +27,12 @@
 
 naive_analysis_in_linear = function(Y, zbar, W.std = NULL, sdz, sdw){
 
+  z_df = as.data.frame(zbar)
+  colnames(z_df) = colnames(zbar)
 
   if(is.null(W.std)){
-
-  fit1 = lm(Y~zbar)
+  model_df = data.frame(Y = Y, z_df)
+  fit1 = lm(Y ~ ., data = model_df)
   beta.fit1 = fit1$coefficients #naive estimator
   var1 = vcov(fit1) #naive covariance matrix
 
@@ -39,13 +41,14 @@ naive_analysis_in_linear = function(Y, zbar, W.std = NULL, sdz, sdw){
   CI.low = tab1[,1]-1.96*tab1[,2]
   CI.high = tab1[,1]+1.96*tab1[,2]
   tab1[,1:2] <- tab1[,1:2] / c(1, sdz)
-  rownames(tab1) = sub("^zbar", "", rownames(tab1))
 
   }
 
   else{
-
-    fit1 = lm(Y~ zbar + W.std)
+    W_df = as.data.frame(W.std)
+    colnames(W_df) = colnames(W.std)
+    model_df = data.frame(Y = Y, z_df, W_df)
+    fit1 = lm(Y ~ ., data = model_df)
     beta.fit1 = fit1$coefficients #naive estimator
     var1 = vcov(fit1) #naive covariance matrix
     tab1 = summary(fit1)$coefficients
@@ -53,8 +56,6 @@ naive_analysis_in_linear = function(Y, zbar, W.std = NULL, sdz, sdw){
     CI.low = tab1[,1]-1.96*tab1[,2]
     CI.high = tab1[,1]+1.96*tab1[,2]
     tab1[,1:2] <- tab1[,1:2] / c(1, sdz, sdw)
-    rownames(tab1) = sub("^zbar", "", rownames(tab1))
-    rownames(tab1) = sub("^W\\.std", "", rownames(tab1))
   }
 
   CI.low  <- tab1[,1] - 1.96 * tab1[,2]

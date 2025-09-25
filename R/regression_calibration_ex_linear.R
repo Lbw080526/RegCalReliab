@@ -112,7 +112,11 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
     icc = sigmax%*%solve(sigmaz)
 
     # -----  Fit Corrected Outcome Model -----
-    fit2 = lm(Y ~ xhat)
+    # Turn calibrated exposures into a data frame with correct names
+    xhat_df = as.data.frame(xhat)
+    colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
+    model_df = data.frame(Y = Y, xhat_df)
+    fit2 = lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2) # sandwich variance estimator
 
@@ -122,8 +126,6 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2, CI.low = CI.low, CI.high = CI.high)
-
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
 
     return(list(
       `Corrected estimates` = tab2,
@@ -190,8 +192,12 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
 
     # -----  Fit Corrected Outcome Model -----
 
-    # Fit logistic regression on the corrected exposures xhat + confounders Wmain
-    fit2 = lm(Y ~ xhat + W.main.std)
+    xhat_df <- as.data.frame(xhat)
+    W_df <- as.data.frame(W.main.std)
+    colnames(xhat_df) <- colnames(z.main.std)   # e.g. "sbp", "chol"
+    colnames(W_df) <- colnames(W.main.std)
+    model_df <- data.frame(Y = Y, xhat_df, W_df)
+    fit2 <- lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
 
     # A "sandwich" variance that partially adjusts for regression aspects but not fully for the measurement model
@@ -204,12 +210,6 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2, CI.low = CI.low, CI.high = CI.high)
-
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
-
-    rownames(tab2) = sub("^W.main.std", "", rownames(tab2))
-
-
 
     # sigmax = Sigma_X = total var - within-person var
     # entire between-person covariance matrix of dimension (t+q) * (t+q)

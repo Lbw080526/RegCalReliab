@@ -29,9 +29,13 @@
 
 naive_analysis_in_poisson = function(Y, zbar, W.std = NULL, sdz, sdw) {
 
+  z_df = as.data.frame(zbar)
+  colnames(z_df) = colnames(zbar)
+
   if(is.null(W.std)) {
     # Fit Poisson regression with log link
-    fit1 = glm(Y ~ zbar, family = poisson(link = "log"))
+    model_df = data.frame(Y = Y, z_df)
+    fit1 = glm(Y ~ ., data = model_df, family = poisson(link = "log"))
     beta.fit1 = fit1$coefficients
     var1 = vcov(fit1)
 
@@ -43,11 +47,14 @@ naive_analysis_in_poisson = function(Y, zbar, W.std = NULL, sdz, sdw) {
     CI.high = tab1[,1] + 1.96*tab1[,2]
     # Exponentiate to get rate ratios
     tab1 = cbind(tab1, exp(cbind(RR = tab1[, 1], CI.low, CI.high)))
-    rownames(tab1) = sub("^zbar", "", rownames(tab1))
+
 
   } else {
     # Fit Poisson regression with log link and covariates
-    fit1 = glm(Y ~ zbar + W.std, family = poisson(link = "log"))
+    W_df = as.data.frame(W.std)
+    colnames(W_df) = colnames(W.std)
+    model_df = data.frame(Y = Y, z_df, W_df)
+    fit1 = glm(Y ~ ., data = model_df, family = poisson(link = "log"))
     beta.fit1 = fit1$coefficients
     var1 = vcov(fit1)
 
@@ -59,8 +66,7 @@ naive_analysis_in_poisson = function(Y, zbar, W.std = NULL, sdz, sdw) {
     CI.high = tab1[,1] + 1.96*tab1[,2]
     # Exponentiate to get rate ratios
     tab1 = cbind(tab1, exp(cbind(RR = tab1[, 1], CI.low, CI.high)))
-    rownames(tab1) = sub("^zbar", "", rownames(tab1))
-    rownames(tab1) = sub("^W\\.std", "", rownames(tab1))
+
   }
 
   list(

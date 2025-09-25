@@ -184,8 +184,6 @@ sandwich_estimator_in_log = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE)
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
 
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
-
     return(list(
       `Sandwich Corrected estimates` = tab3))
 
@@ -358,8 +356,6 @@ sandwich_estimator_in_log = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std
     tab3[,3] = tab3[,1]/tab3[,2]
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE)
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
-    rownames(tab3) = sub("^W\\.std", "", rownames(tab3))
 
     return(list(
       `Sandwich Corrected estimates` = tab3))

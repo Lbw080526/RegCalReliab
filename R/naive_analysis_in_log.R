@@ -31,10 +31,12 @@
 
 naive_analysis_in_log = function(Y, zbar, W.std = NULL, sdz, sdw){
 
+  z_df = as.data.frame(zbar)
+  colnames(z_df) = colnames(zbar)
 
   if(is.null(W.std)){
-
-  fit1 = glm(Y~zbar,family = "binomial")
+  model_df = data.frame(Y = Y, z_df)
+  fit1 = glm(Y ~ ., data = model_df, family = "binomial")
   beta.fit1 = fit1$coefficients #naive estimator
   var1 = vcov(fit1) #naive covariance matrix
 
@@ -43,13 +45,14 @@ naive_analysis_in_log = function(Y, zbar, W.std = NULL, sdz, sdw){
   CI.low = tab1[,1]-1.96*tab1[,2]
   CI.high = tab1[,1]+1.96*tab1[,2]
   tab1 = cbind(tab1,exp(cbind(OR = tab1[, 1],CI.low,CI.high)))
-  rownames(tab1) = sub("^zbar", "", rownames(tab1))
 
   }
 
   else{
-
-    fit1 = glm(Y~ zbar + W.std,family = "binomial")
+    W_df = as.data.frame(W.std)
+    colnames(W_df) = colnames(W.std)
+    model_df = data.frame(Y = Y, z_df, W_df)
+    fit1 = glm(Y ~ ., data = model_df, family = "binomial")
     beta.fit1 = fit1$coefficients #naive estimator
     var1 = vcov(fit1) #naive covariance matrix
     tab1 = summary(fit1)$coefficients
@@ -57,8 +60,6 @@ naive_analysis_in_log = function(Y, zbar, W.std = NULL, sdz, sdw){
     CI.low = tab1[,1]-1.96*tab1[,2]
     CI.high = tab1[,1]+1.96*tab1[,2]
     tab1 = cbind(tab1,exp(cbind(OR = tab1[, 1],CI.low,CI.high)))
-    rownames(tab1) = sub("^zbar", "", rownames(tab1))
-    rownames(tab1) = sub("^W\\.std", "", rownames(tab1))
   }
 
 

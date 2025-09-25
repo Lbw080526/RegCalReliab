@@ -101,7 +101,10 @@ reg_calibration_in_poisson = function(Y, zbar, z.std, W.std = NULL, muz, muw, sd
 
     colnames(xhat) = paste0(colnames(zbar))
 
-    fit2 = glm(Y ~ xhat, family = poisson(link = "log"))
+    xhat_df = as.data.frame(xhat)
+    colnames(xhat_df) = colnames(zbar)   # e.g. "sbp", "chol"
+    model_df = data.frame(Y = Y, xhat_df)
+    fit2 = glm(Y ~ ., data = model_df, family = poisson(link = "log"))
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2)
 
@@ -111,7 +114,6 @@ reg_calibration_in_poisson = function(Y, zbar, z.std, W.std = NULL, muz, muw, sd
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2,exp(cbind(OR = tab2[, 1],CI.low,CI.high)))
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
 
     return(list(
       `Corrected estimates` = tab2,
@@ -175,8 +177,14 @@ reg_calibration_in_poisson = function(Y, zbar, z.std, W.std = NULL, muz, muw, sd
     }
 
     colnames(xhat) = paste0(colnames(zbar))
+    colnames(W.std) = colnames(W.std)
 
-    fit2 = glm(Y ~ xhat + W.std, family = poisson(link = "log"))
+    xhat_df <- as.data.frame(xhat)
+    W_df <- as.data.frame(W.std)
+    colnames(xhat_df) <- colnames(xhat)   # e.g. "sbp", "chol"
+    colnames(W_df) <- colnames(W.std)
+    model_df <- data.frame(Y = Y, xhat_df, W_df)
+    fit2 <- glm(Y ~ ., data = model_df, family = poisson(link = "log"))
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2)
 
@@ -186,9 +194,6 @@ reg_calibration_in_poisson = function(Y, zbar, z.std, W.std = NULL, muz, muw, sd
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2,exp(cbind(OR = tab2[, 1],CI.low,CI.high)))
-    # Rename rows: clean variable names
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
-    rownames(tab2) <- sub("^W\\.std", "", rownames(tab2))
 
 
     return(list(

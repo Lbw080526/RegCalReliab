@@ -237,8 +237,6 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE) # two‐sided p‐value from the normal distribution
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
 
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
-
     return(list(
       `Sandwich Corrected estimates` = tab3
     ))
@@ -459,10 +457,6 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE)
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
 
-
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
-    rownames(tab3) = sub("^W.main.std", "", rownames(tab3))
-
     return(list(
       `Sandwich Corrected estimates` = tab3
     ))
@@ -470,3 +464,4 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
   }
 
 }
+

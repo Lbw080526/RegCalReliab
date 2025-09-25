@@ -224,7 +224,6 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     tab3[,3] = tab3[,1]/tab3[,2]  #  Z‐value
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE) # two‐sided p‐value from the normal distribution
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
     return(list(
       `Sandwich Corrected estimates` = tab3
     ))
@@ -436,7 +435,6 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     # Sandwich formula
     cov2 = solve(A)%*%B%*%t(solve(A))
     var3 = cov2[(t+q+m+1):(t+q+m+s),(t+q+m+1):(t+q+m+s)]
-
     tab3 = summary(fit2)$coefficients
     tab3[,2] = sqrt(diag(cov2)[(t+q+m+1):(t+q+m+s)])
     tab3[,1:2] = tab3[,1:2]/c(1,sdz,sdw)
@@ -445,8 +443,6 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     tab3[,3] = tab3[,1]/tab3[,2]
     tab3[,4] = 2*pnorm(tab3[,3],lower.tail=FALSE)
     tab3 = cbind(tab3,exp(cbind(OR = tab3[, 1],CI.low,CI.high)))
-    rownames(tab3) = sub("^xhat", "", rownames(tab3))
-    rownames(tab3) = sub("^W\\.main\\.std", "", rownames(tab3))
     return(list(
       `Sandwich Corrected estimates` = tab3
     ))

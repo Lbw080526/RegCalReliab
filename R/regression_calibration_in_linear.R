@@ -99,7 +99,10 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
 
     colnames(xhat) = paste0(colnames(zbar))
 
-    fit2 = lm(Y~xhat)
+    xhat_df = as.data.frame(xhat)
+    colnames(xhat_df) = colnames(zbar)   # e.g. "sbp", "chol"
+    model_df = data.frame(Y = Y, xhat_df)
+    fit2 = lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2)
 
@@ -109,7 +112,6 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2, CI.low = CI.low, CI.high = CI.high)
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
 
     return(list(
       `Corrected estimates` = tab2,
@@ -173,9 +175,14 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
     }
 
     colnames(xhat) = paste0(colnames(zbar))
+    colnames(W.std) = colnames(W.std)
 
-
-    fit2 = lm(Y~xhat+W.std)
+    xhat_df <- as.data.frame(xhat)
+    W_df <- as.data.frame(W.std)
+    colnames(xhat_df) <- colnames(xhat)   # e.g. "sbp", "chol"
+    colnames(W_df) <- colnames(W.std)
+    model_df <- data.frame(Y = Y, xhat_df, W_df)
+    fit2 <- lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2)
 
@@ -185,9 +192,6 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2, CI.low = CI.low, CI.high = CI.high)
-    # Rename rows: clean variable names
-    rownames(tab2) = sub("^xhat", "", rownames(tab2))
-    rownames(tab2) <- sub("^W\\.std", "", rownames(tab2))
 
 
     return(list(

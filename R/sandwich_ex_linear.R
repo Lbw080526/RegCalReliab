@@ -169,7 +169,6 @@ sandwich_estimator_ex_linear <- function(
     CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
     CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
     tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
-    rownames(tab3) <- sub("^xhat", "", rownames(tab3))
 
     return(list(`Sandwich Corrected estimates` = tab3))
   }
@@ -333,8 +332,6 @@ sandwich_estimator_ex_linear <- function(
   CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
   CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
   tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
-  rownames(tab3) <- sub("^xhat", "", rownames(tab3))
-  rownames(tab3) <- sub("^W\\.main\\.std", "", rownames(tab3))
 
   list(`Sandwich Corrected estimates` = tab3)
 }
