@@ -1,0 +1,455 @@
+---
+title: "simulation_result_ex"
+output: html_document
+date: "2025-09-24"
+---
+
+```{r}
+# EXTERNAL 2Z 2W
+library(RegCalReliab)
+library(mgcv)
+set.seed(123)
+
+# Helper for measurement error
+add_err = function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+
+# True coefficient (on log-odds scale) and OR
+beta = log(1.5)
+OR_true = 1.5
+
+simulate_once = function() {
+  # ---- True covariates ----
+  x = mgcv::rmvn(3000, c(0,0), matrix(c(1,0.3,0.3,1), 2))
+  
+  # Error-free covariates (W1 = continuous, W2 = binary)
+  W1_main = rnorm(1500)
+  W2_main = rbinom(1500, 1, 0.5)
+  W1_rep  = rnorm(1500)
+  W2_rep  = rbinom(1500, 1, 0.5)
+  
+  # ---- Main study error-prone Z ----
+  z.main = x[1:1500, 1:2] + matrix(rnorm(1500*2, 0, sqrt(0.4)), 1500, 2)
+  colnames(z.main) = c("z1","z2")
+  
+  # ---- External replicates for Z ----
+  z1_rep = rbind(
+    cbind(add_err(x[1501:2000, 1]), add_err(x[1501:2000, 1]), NA, NA),
+    cbind(add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), NA),
+    cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
+  )
+  colnames(z1_rep) = paste0("z1_", 1:4)
+  
+  z2_rep = rbind(
+    cbind(add_err(x[1501:2000, 2]), add_err(x[1501:2000, 2]), NA, NA),
+    cbind(add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), NA),
+    cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
+  )
+  colnames(z2_rep) = paste0("z2_", 1:4)
+  
+  
+  # ---- Outcome ----
+  p = plogis(-2.3 + beta*rowSums(x[1:1500, ]) + 0.5*W1_main - 0.3*W2_main)
+  Y = rbinom(1500, 1, p)
+  
+  main_data = data.frame(
+    Y = Y,
+    z1 = z.main[, "z1"],
+    z2 = z.main[, "z2"],
+    W1 = W1_main,
+    W2 = W2_main
+  )
+  
+  rep_data = data.frame(z1_rep, z2_rep, W1 = W1_rep, W2 = W2_rep, check.names = FALSE)
+  
+  # ---- Regression Calibration ----
+  res = RC_ExReliab(
+    formula = Y ~ z1(z1_1, z1_2, z1_3, z1_4) + z2(z2_1, z2_2, z2_3, z2_4) + W1 + W2,
+    main_data = main_data,
+    rep_data = rep_data,
+    link = "logistic"
+  )
+  
+  return(res)
+}
+
+B = 1000
+results_list = replicate(B, simulate_once(), simplify = FALSE)
+
+# Extract naive + corrected tables
+naive_tabs = lapply(results_list, function(x) x$uncorrected)
+corrected_tabs = lapply(results_list, function(x) x$corrected)
+
+avg_naive = Reduce("+", naive_tabs) / B
+avg_corrected = Reduce("+", corrected_tabs) / B
+
+cat("\nAverage Naive Logistic Estimates (B = ", B, "):\n", sep = "")
+print(round(avg_naive, 5))
+
+cat("\nAverage Corrected Logistic Estimates (B = ", B, "):\n", sep = "")
+print(round(avg_corrected, 5))
+
+
+inside_ci = function(tab, i, truth = OR_true) {
+  ci = tab[i , c("CI.low", "CI.high")]
+  ci[1] <= truth && truth <= ci[2]
+}
+
+row_z1 = which(rownames(avg_naive) == "z1")
+row_z2 = which(rownames(avg_naive) == "z2")
+
+coverage = function(tab_list, row) {
+  mean(sapply(tab_list, function(tab) inside_ci(tab, row))) * 100
+}
+
+cov_z1_naive = coverage(naive_tabs, row_z1)
+cov_z1_corr = coverage(corrected_tabs, row_z1)
+cov_z2_naive = coverage(naive_tabs, row_z2)
+cov_z2_corr = coverage(corrected_tabs, row_z2)
+
+cat("\nCoverage of TRUE OR = 1.5 for error-prone exposure z1:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z1_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z1_corr))
+
+cat("\nCoverage of TRUE OR = 1.5 for error-prone exposure z2:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z2_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z2_corr))
+
+# --- Pull all z1 and z2 estimates and reported SEs (corrected) ---
+z1_correct_est <- sapply(corrected_tabs, function(tab) tab["z1", "Estimate"])
+z1_correct_se  <- sapply(corrected_tabs, function(tab) tab["z1", "Std. Error"])
+z2_correct_est <- sapply(corrected_tabs, function(tab) tab["z2", "Estimate"])
+z2_correct_se  <- sapply(corrected_tabs, function(tab) tab["z2", "Std. Error"])
+
+# --- Monte Carlo SD (empirical) ---
+sd_mc1 <- sd(z1_correct_est, na.rm = TRUE)
+sd_mc2 <- sd(z2_correct_est, na.rm = TRUE)
+
+# --- Average model-based SE (Estimated SE, ESE/ASE) ---
+mean_se1 <- mean(z1_correct_se, na.rm = TRUE)
+mean_se2 <- mean(z2_correct_se, na.rm = TRUE)
+
+# --- Optional direct comparison and ratio ---
+cat("\nCorrected z1:\n")
+cat(sprintf("  Monte Carlo SD (mc_sd) : %.4f\n", sd_mc1))
+cat(sprintf("  Mean reported SE (ese) : %.4f\n", mean_se1))
+
+cat("\nCorrected z2:\n")
+cat(sprintf("  Monte Carlo SD (mc_sd) : %.4f\n", sd_mc2))
+cat(sprintf("  Mean reported SE (ese) : %.4f\n", mean_se2))
+
+```
+
+
+```{r}
+# EXTERNAL 1Z 0W
+library(RegCalReliab)
+library(mgcv)
+set.seed(123)
+
+# Helper to add classical measurement error
+add_err <- function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+
+# True coefficient (log-odds scale) and OR
+beta <- log(1.5)
+OR_true <- 1.5
+
+simulate_once <- function() {
+  ## ---- True covariate ----
+  x <- rnorm(3000)   # one true exposure
+  
+  ## ---- Main study (n=1500) error-prone Z ----
+  z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
+  
+  ## ---- External replicates for Z ----
+  z_rep <- rbind(
+    cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+    cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+    cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+  )
+  colnames(z_rep) <- paste0("z_", 1:4)
+  
+  ## ---- Outcome ----
+  p <- plogis(-2.3 + beta * x[1:1500])
+  Y <- rbinom(1500, 1, p)
+  
+  main_data <- data.frame(Y = Y, z = z.main)
+  rep_data  <- data.frame(z_rep, check.names = FALSE)
+  
+  ## ---- Regression Calibration ----
+  res <- RC_ExReliab(
+    formula   = Y ~ z(z_1, z_2, z_3, z_4),
+    main_data = main_data,
+    rep_data  = rep_data,
+    link      = "logistic"
+  )
+  
+  return(res)
+}
+
+## ---- Monte Carlo loop ----
+B <- 1000
+results_list  <- replicate(B, simulate_once(), simplify = FALSE)
+
+## Extract naive and corrected estimates
+naive_tabs    <- lapply(results_list, function(x) x$uncorrected)
+corrected_tabs<- lapply(results_list, function(x) x$corrected)
+
+avg_naive     <- Reduce("+", naive_tabs) / B
+avg_corrected <- Reduce("+", corrected_tabs) / B
+
+cat("\nAverage Naive Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_naive, 5))
+
+cat("\nAverage Corrected Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_corrected, 5))
+
+## ---- Coverage of TRUE OR = 1.5 ----
+inside_ci <- function(tab, i, truth = OR_true) {
+  ci <- tab[i, c("CI.low", "CI.high")]
+  truth >= ci[1] && truth <= ci[2]
+}
+
+row_z <- which(rownames(avg_naive) == "z")
+
+coverage <- function(tab_list, row) {
+  mean(sapply(tab_list, function(tab) inside_ci(tab, row))) * 100
+}
+
+cov_naive <- coverage(naive_tabs, row_z)
+cov_corr  <- coverage(corrected_tabs, row_z)
+
+cat("\nCoverage of TRUE OR = 1.5 for exposure z:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_corr))
+
+## ---- Monte Carlo SD vs mean reported SE ----
+z_correct_est <- sapply(corrected_tabs, function(tab) tab[2, "Estimate"])
+z_correct_se  <- sapply(corrected_tabs, function(tab) tab[2, "Std. Error"])
+
+sd_mc   <- sd(z_correct_est, na.rm = TRUE)
+mean_se <- mean(z_correct_se, na.rm = TRUE)
+
+cat("\nMonte Carlo SD (empirical) :", round(sd_mc, 5), "\n")
+cat("Average reported SE        :", round(mean_se, 5), "\n")
+```
+
+```{r}
+# EXTERNAL 1Z 1W
+library(RegCalReliab)
+library(mgcv)
+set.seed(123)
+
+# --- Helper to add classical measurement error
+add_err <- function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+
+# --- True coefficient (log-odds scale) and OR
+beta <- log(1.5)
+OR_true <- 1.5
+
+simulate_once <- function() {
+  ## ---- True covariates ----
+  x <- rnorm(3000)               # true exposure
+  W_main <- rnorm(1500)          # error-free covariate
+  W_rep  <- rnorm(1500)          # replicate W (not used for RC, just for completeness)
+  
+  ## ---- Main study error-prone Z ----
+  z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
+  
+  ## ---- External replicates for Z ----
+  z_rep <- rbind(
+    cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+    cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+    cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+  )
+  colnames(z_rep) <- paste0("z_", 1:4)
+  
+  ## ---- Outcome ----
+  p <- plogis(-2.3 + beta * x[1:1500] + 0.5 * W_main)
+  Y <- rbinom(1500, 1, p)
+  
+  ## ---- Data frames for RC_ExReliab ----
+  main_data <- data.frame(Y = Y, z = z.main, W = W_main)
+  rep_data  <- data.frame(z_rep, W = W_rep, check.names = FALSE)
+  
+  ## ---- Regression Calibration ----
+  res <- RC_ExReliab(
+    formula   = Y ~ z(z_1, z_2, z_3, z_4) + W,
+    main_data = main_data,
+    rep_data  = rep_data,
+    link      = "logistic"
+  )
+  return(res)
+}
+
+## ---- Monte Carlo loop ----
+B <- 1000
+results_list <- replicate(B, simulate_once(), simplify = FALSE)
+
+## ---- Extract naive and corrected estimates
+naive_tabs     <- lapply(results_list, function(x) x$uncorrected)
+corrected_tabs <- lapply(results_list, function(x) x$corrected)
+
+avg_naive     <- Reduce("+", naive_tabs) / B
+avg_corrected <- Reduce("+", corrected_tabs) / B
+
+cat("\nAverage Naive Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_naive, 5))
+
+cat("\nAverage Corrected Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_corrected, 5))
+
+## ---- Coverage of TRUE OR = 1.5 for z ----
+inside_ci <- function(tab, i, truth = OR_true) {
+  ci <- tab[i, c("CI.low", "CI.high")]
+  truth >= ci[1] && truth <= ci[2]
+}
+
+row_z <- which(rownames(avg_naive) == "z")
+
+coverage <- function(tab_list, row) {
+  mean(sapply(tab_list, function(tab) inside_ci(tab, row))) * 100
+}
+
+cov_z_naive <- coverage(naive_tabs, row_z)
+cov_z_corr  <- coverage(corrected_tabs, row_z)
+
+cat("\nCoverage of TRUE OR = 1.5 for exposure z:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z_corr))
+
+## ---- Monte Carlo SD vs mean reported SE for z ----
+z_correct_est <- sapply(corrected_tabs, function(tab) tab[2, "Estimate"])
+z_correct_se  <- sapply(corrected_tabs, function(tab) tab[2, "Std. Error"])
+
+sd_mc   <- sd(z_correct_est, na.rm = TRUE)
+mean_se <- mean(z_correct_se, na.rm = TRUE)
+
+cat("\nCorrected z:\n")
+cat(sprintf("  Monte Carlo SD (mc_sd) : %.4f\n", sd_mc))
+cat(sprintf("  Mean reported SE (ese) : %.4f\n", mean_se))
+
+```
+
+```{r}
+# EXTERNAL 2Z 0W
+library(RegCalReliab)
+library(mgcv)
+set.seed(123)
+
+# --- Helper for measurement error
+add_err <- function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+
+# --- True coefficient (log-odds scale) and OR
+beta <- log(1.5)
+OR_true <- 1.5
+
+simulate_once <- function() {
+  ## ---- True covariates (two true exposures) ----
+  x <- mgcv::rmvn(3000, c(0, 0), matrix(c(1, 0.3, 0.3, 1), 2))
+  
+  ## ---- Main study error-prone Z1 and Z2 ----
+  z.main <- x[1:1500, 1:2] + matrix(rnorm(1500 * 2, 0, sqrt(0.4)), 1500, 2)
+  colnames(z.main) <- c("z1", "z2")
+  
+  ## ---- External replicates for Z1 ----
+  z1_rep <- rbind(
+    cbind(add_err(x[1501:2000, 1]), add_err(x[1501:2000, 1]), NA, NA),
+    cbind(add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), NA),
+    cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
+  )
+  colnames(z1_rep) <- paste0("z1_", 1:4)
+  
+  ## ---- External replicates for Z2 ----
+  z2_rep <- rbind(
+    cbind(add_err(x[1501:2000, 2]), add_err(x[1501:2000, 2]), NA, NA),
+    cbind(add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), NA),
+    cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
+  )
+  colnames(z2_rep) <- paste0("z2_", 1:4)
+  
+  ## ---- Outcome ----
+  p <- plogis(-2.3 + beta * rowSums(x[1:1500, ]))
+  Y <- rbinom(1500, 1, p)
+  
+  ## ---- Data for RC_ExReliab ----
+  main_data <- data.frame(Y = Y,
+                          z1 = z.main[, "z1"],
+                          z2 = z.main[, "z2"])
+  
+  rep_data <- data.frame(z1_rep, z2_rep, check.names = FALSE)
+  
+  ## ---- Regression Calibration ----
+  RC_ExReliab(
+    formula   = Y ~ z1(z1_1, z1_2, z1_3, z1_4) + z2(z2_1, z2_2, z2_3, z2_4),
+    main_data = main_data,
+    rep_data  = rep_data,
+    link      = "logistic"
+  )
+}
+
+## ---- Monte Carlo loop ----
+B <- 1000
+results_list <- replicate(B, simulate_once(), simplify = FALSE)
+
+## ---- Extract naive and corrected tables
+naive_tabs     <- lapply(results_list, function(x) x$uncorrected)
+corrected_tabs <- lapply(results_list, function(x) x$corrected)
+
+avg_naive     <- Reduce("+", naive_tabs) / B
+avg_corrected <- Reduce("+", corrected_tabs) / B
+
+cat("\nAverage Naive Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_naive, 5))
+
+cat("\nAverage Corrected Logistic Estimates (B=", B, "):\n", sep = "")
+print(round(avg_corrected, 5))
+
+## ---- Coverage of TRUE OR = 1.5 for z1 and z2 ----
+inside_ci <- function(tab, i, truth = OR_true) {
+  ci <- tab[i, c("CI.low", "CI.high")]
+  truth >= ci[1] && truth <= ci[2]
+}
+
+row_z1 <- which(rownames(avg_naive) == "z1")
+row_z2 <- which(rownames(avg_naive) == "z2")
+
+coverage <- function(tab_list, row) {
+  mean(sapply(tab_list, function(tab) inside_ci(tab, row))) * 100
+}
+
+cov_z1_naive <- coverage(naive_tabs, row_z1)
+cov_z1_corr  <- coverage(corrected_tabs, row_z1)
+cov_z2_naive <- coverage(naive_tabs, row_z2)
+cov_z2_corr  <- coverage(corrected_tabs, row_z2)
+
+cat("\nCoverage of TRUE OR = 1.5 for error-prone exposure z1:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z1_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z1_corr))
+
+cat("\nCoverage of TRUE OR = 1.5 for error-prone exposure z2:\n")
+cat(sprintf("  • Naive                 : %5.1f %%\n", cov_z2_naive))
+cat(sprintf("  • Regression Calibration: %5.1f %%\n", cov_z2_corr))
+
+## ---- Monte Carlo SD vs mean reported SE for z1 and z2 ----
+z1_correct_est <- sapply(corrected_tabs, function(tab) tab["z1", "Estimate"])
+z1_correct_se  <- sapply(corrected_tabs, function(tab) tab["z1", "Std. Error"])
+z2_correct_est <- sapply(corrected_tabs, function(tab) tab["z2", "Estimate"])
+z2_correct_se  <- sapply(corrected_tabs, function(tab) tab["z2", "Std. Error"])
+
+sd_mc1  <- sd(z1_correct_est, na.rm = TRUE)
+mean_se1<- mean(z1_correct_se, na.rm = TRUE)
+sd_mc2  <- sd(z2_correct_est, na.rm = TRUE)
+mean_se2<- mean(z2_correct_se, na.rm = TRUE)
+
+cat("\nCorrected z1:\n")
+cat(sprintf("  Monte Carlo SD (mc_sd) : %.4f\n", sd_mc1))
+cat(sprintf("  Mean reported SE (ese) : %.4f\n", mean_se1))
+
+cat("\nCorrected z2:\n")
+cat(sprintf("  Monte Carlo SD (mc_sd) : %.4f\n", sd_mc2))
+cat(sprintf("  Mean reported SE (ese) : %.4f\n", mean_se2))
+
+
+```
+
+
