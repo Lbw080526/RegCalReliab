@@ -6,7 +6,7 @@ Authors@R: c(
     person("Yu", "Lu", role = c("aut", "cph")),
     person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", role = c("aut", "cre", "cph")),
     person("Molin", "Wang", role = c("aut", "cph"))
-    )
+)
 Description: Implements regression calibration methods for correcting 
     measurement error in regression models using external or internal 
     reliability studies. The package supports continuous, binary, and 
@@ -28,5 +28,6 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-URL: https://github.com/lbw080526/RegCalReliab
+URL: https://lbw080526.github.io/RegCalReliab,
+     https://github.com/lbw080526/RegCalReliab
 BugReports: https://github.com/lbw080526/RegCalReliab/issues
