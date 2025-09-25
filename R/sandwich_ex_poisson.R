@@ -1,47 +1,90 @@
 #' Sandwich Variance Estimator for External Poisson (Log-Linear) Regression
 #'
-#' Computes robust (sandwich) variance-corrected coefficient estimates for
-#' Poisson log-linear regression models using external reliability study data.
-#' Accounts for measurement error by incorporating both main-study and
-#' replicate reliability study information into calibration and variance
-#' estimation.
+#' \code{sandwich_estimator_ex_poisson()} computes robust (sandwich)
+#' variance-corrected coefficient estimates for Poisson log-linear regression
+#' models when exposures are measured with classical additive error and
+#' replicate data are available from an external reliability study.
+#' It augments the regression calibration estimator with full main- and
+#' reliability-study information to provide valid standard errors and
+#' confidence intervals.
 #'
-#' @param xhat Matrix of regression-calibrated predictors for the main study.
-#' @param z.main.std Standardized main-study exposure matrix (n_main x t).
-#' @param z.rep.std List of standardized replicate exposure matrices for the
-#'   reliability study.
-#' @param r Integer vector of replicate counts for each subject.
-#' @param Y Integer, non-negative count outcome vector.
-#' @param indicator Binary indicator vector: \code{1 = main study}, \code{0 = reliability study}.
-#' @param v12star Calibration submatrix (between-person exposure block).
-#' @param beta.fit2 Estimated regression coefficients from the corrected Poisson model.
-#' @param W.main.std Optional standardized covariate matrix (n_main x q); default \code{NULL}.
+#' @param xhat Numeric matrix (\eqn{n_m \times t}) of regression-calibrated
+#'   predictors for the main study.
+#' @param z.main.std Numeric matrix (\eqn{n_m \times t}) of standardized
+#'   error-prone exposures from the main study.
+#' @param z.rep.std Named list of standardized replicate matrices
+#'   (each \eqn{n_r \times r_i}) from the reliability study.
+#' @param r Integer vector of replicate counts for each subject
+#'   (length \eqn{n_m + n_r}).
+#' @param Y Integer, non-negative count outcome vector of length \eqn{n_m}.
+#' @param indicator Binary vector of length \eqn{n_m + n_r}:
+#'   \code{1 = main study}, \code{0 = reliability study}.
+#' @param v12star Calibration submatrix (between-person exposure block)
+#'   from \code{\link{reg_calibration_ex_poisson}}.
+#' @param beta.fit2 Vector of regression coefficients from the corrected Poisson model.
+#' @param W.main.std Optional numeric matrix (\eqn{n_m \times q}) of
+#'   standardized covariates; default \code{NULL}.
 #' @param sigma Within-person covariance matrix of replicate exposures.
-#' @param sigmaz Total covariance matrix of exposures (and covariates if present).
-#' @param sigmawithin Estimated within-person covariance matrix.
-#' @param sdz Vector of standard deviations used for exposure standardization.
-#' @param sdw Optional vector of standard deviations used for covariate standardization.
-#' @param muz Mean(s) of exposures used in standardization.
-#' @param muw Optional mean(s) of covariates used in standardization.
-#' @param fit2 Fitted Poisson regression model object from the calibration step.
+#' @param sigmaz Total covariance matrix of the observed exposures (and
+#'   covariates if included).
+#' @param sigmawithin Estimated within-person covariance matrix
+#'   (same block structure as \code{sigmaz}).
+#' @param sdz Numeric vector of standard deviations used to standardize exposures.
+#' @param sdw Optional numeric vector of standard deviations used to
+#'   standardize covariates.
+#' @param muz Numeric vector of exposure means used in standardization.
+#' @param muw Optional numeric vector of covariate means used in standardization.
+#' @param fit2 The fitted \code{glm} object from the corrected Poisson regression.
 #'
-#' @return A list containing:
-#' \item{Sandwich Corrected estimates}{Coefficient table with regression-calibrated
-#'   estimates, robust (sandwich) standard errors, Wald test statistics, 95% confidence
-#'   intervals, and exponentiated rate ratios (RR).}
+#' @return A list with:
+#' \describe{
+#'   \item{\code{Sandwich Corrected estimates}}{Matrix of regression-calibrated
+#'         Poisson coefficients including point estimates, robust (sandwich)
+#'         standard errors, z-values, p-values, exponentiated coefficients
+#'         (rate ratios), and 95\% confidence intervals, all on the
+#'         original (unstandardized) scale.}
+#' }
 #'
 #' @details
-#' The estimator augments Poisson regression calibration with external replicate data.
-#' It partitions variance into between- and within-subject components, and builds
-#' the full sandwich covariance estimator by combining contributions from main and
-#' reliability studies. Derivative blocks for covariance parameters are constructed
-#' to form the Jacobian and score variance matrices. This ensures valid inference
-#' under classical additive measurement error when external reliability data are
-#' available.
+#' The method builds the full sandwich covariance estimator by combining
+#' score contributions from both the main study and the replicate reliability
+#' study. It partitions variance into between- and within-subject components,
+#' forms Jacobian (A) and variance (B) matrices for all covariance and
+#' regression parameters, and computes
+#' \eqn{\mathrm{Var}(\hat{\beta}) = A^{-1} B (A^{-1})^\top}.
+#' This ensures valid inference for Poisson log-linear regression with
+#' classical additive measurement error when external reliability data
+#' are available.
+#'
+#' @examples
+#' \dontrun{
+#' # Assuming xhat, z.main.std, z.rep.std, etc. are prepared as in
+#' # reg_calibration_ex_poisson():
+#' fit_sand <- sandwich_estimator_ex_poisson(
+#'   xhat = xhat,
+#'   z.main.std = z.main.std,
+#'   z.rep.std = z.rep.std,
+#'   r = r,
+#'   Y = Y,
+#'   indicator = indicator,
+#'   v12star = v12star,
+#'   beta.fit2 = beta.fit2,
+#'   W.main.std = NULL,
+#'   sigma = sigma,
+#'   sigmaz = sigmaz,
+#'   sigmawithin = sigmawithin,
+#'   sdz = sdz,
+#'   sdw = NULL,
+#'   muz = muz,
+#'   muw = NULL,
+#'   fit2 = fit2
+#' )
+#' str(fit_sand)
+#' }
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm pnorm poisson
+
 
 
 

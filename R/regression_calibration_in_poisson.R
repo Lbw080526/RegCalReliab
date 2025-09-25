@@ -1,53 +1,100 @@
-#' Regression Calibration for Poisson Regression (Internal Replicate Study)
+#' Regression Calibration for Poisson Regression (Internal Reliability Study)
 #'
-#' Performs regression calibration for a Poisson log-linear model of the outcome
-#' \code{Y} using subject-level replicate data from an internal reliability study.
-#' Corrects for classical additive measurement error by decomposing observed
-#' exposure variance into between-person and within-person components, and
-#' constructing calibrated predictors \code{xhat}.
+#' \code{reg_calibration_in_poisson()} corrects for classical additive
+#' measurement error in Poisson log-linear regression using replicate
+#' measurements from an internal reliability study. It estimates between- and
+#' within-subject variance components from replicates, constructs calibrated
+#' predictors \code{xhat}, and fits a Poisson GLM to the calibrated exposures.
+#' A robust (sandwich) variance estimator is used for valid inference.
 #'
-#' @param Y Integer, non-negative count outcome vector (length n).
-#' @param zbar Matrix (n x t) of standardized subject-level averages of replicate exposures.
-#' @param z.std List of length \code{t}; each element is an (n x r_i) matrix of
-#'   standardized replicates for one exposure, padded with \code{NA} if fewer than
-#'   the maximum number of replicates.
-#' @param W.std Optional standardized covariate matrix (n x q); default \code{NULL}.
-#' @param muz Mean(s) of exposures used for standardization.
-#' @param muw Optional mean(s) of covariates used for standardization.
-#' @param sdz Vector of standard deviations used to standardize exposures.
-#' @param sdw Optional vector of standard deviations used to standardize covariates.
-#' @param r Integer vector of replicate counts for each subject (length n).
-#' @param var1 Naive covariance matrix of coefficients (from naive Poisson model),
-#'   used to set dimension names for covariance matrices.
+#' @param Y Integer, non-negative count outcome vector of length \eqn{n}.
+#' @param zbar Numeric matrix (\eqn{n \times t}) of standardized subject-level
+#'   averages of replicate exposures.
+#' @param z.std Named list of length \eqn{t}; each element is an \eqn{n \times r_i}
+#'   matrix of standardized replicate measurements for one exposure, padded
+#'   with \code{NA} if fewer than the maximum number of replicates.
+#' @param W.std Optional numeric matrix of standardized error-free covariates
+#'   (\eqn{n \times q}). If omitted, calibration is performed for exposures only.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param r Integer vector of replicate counts for each subject (length \eqn{n}).
+#' @param var1 Naive covariance matrix of coefficients (from
+#'   \code{\link{naive_analysis_in_poisson}}), used to set dimension names for
+#'   covariance matrices.
 #'
-#' @return A list with:
-#' \item{Corrected estimates}{Coefficient table with regression-calibrated estimates,
-#'   robust (sandwich) standard errors, 95\% confidence intervals, and exponentiated
-#'   rate ratios (RR).}
-#' \item{icc}{Intraclass correlation matrix, quantifying reliability of the exposure(s).}
-#' \item{sigmax}{Estimated between-person covariance matrix.}
-#' \item{sigmawithin}{Estimated within-person covariance matrix.}
-#' \item{sigmazstar}{Estimated total covariance matrix based on internal replicate structure.}
-#' \item{sigmazhat}{Subject-specific total covariance matrices adjusted by replicate counts.}
-#' \item{xhat}{Matrix of regression-calibrated predictors for the main study.}
-#' \item{beta.fit2}{Vector of fitted coefficients from the corrected Poisson regression.}
-#' \item{v12star}{Between-person exposure block of the calibration matrix.}
-#' \item{sigma}{Within-person variance of exposures estimated from replicates.}
-#' \item{fit2}{Fitted \code{glm} object from the corrected Poisson regression.}
-#' \item{v}{Effective sample size adjustment factor for correlated replicates.}
+#' @return A list with the following components:
+#' \describe{
+#'   \item{\code{Corrected estimates}}{Matrix of calibrated Poisson regression
+#'         coefficients, robust (sandwich) standard errors, z-values, p-values,
+#'         rate ratios (RR), and 95\% confidence intervals on the original scale.}
+#'   \item{\code{icc}}{Intraclass correlation (matrix) quantifying reliability
+#'         of the error-prone exposures.}
+#'   \item{\code{sigmax}}{Estimated between-person covariance matrix of the true exposures.}
+#'   \item{\code{sigmawithin}}{Estimated within-person (measurement-error) covariance matrix.}
+#'   \item{\code{sigmazstar}}{Estimated total covariance matrix based on replicate structure.}
+#'   \item{\code{sigmazhat}}{List of subject-specific total covariance matrices
+#'         adjusted for replicate counts.}
+#'   \item{\code{xhat}}{Matrix of calibrated exposure predictions used in the corrected regression.}
+#'   \item{\code{beta.fit2}}{Vector of calibrated Poisson regression coefficients.}
+#'   \item{\code{v12star}}{Calibration matrix used to map observed to corrected exposures.}
+#'   \item{\code{sigma}}{Within-person variance matrix estimated from replicates.}
+#'   \item{\code{fit2}}{The fitted \code{glm} object for the corrected Poisson regression.}
+#'   \item{\code{v}}{Effective sample size adjustment factor for correlated replicates.}
+#' }
 #'
 #' @details
-#' Internal replicate data are used to partition exposure variance into
-#' between-person and within-person components. These are combined into calibration
-#' matrices to compute subject-specific \code{xhat}, which replace the error-prone
-#' averages \code{zbar} in the Poisson log-linear model. Sandwich variance
-#' estimators provide robust standard errors. When covariates are included, their
-#' covariance with exposures is incorporated into the calibration.
+#' The method follows the classical regression calibration framework for
+#' internal reliability studies:
+#' \enumerate{
+#'   \item Estimate total (\eqn{\Sigma_Z}) and within-subject (\eqn{\Sigma_\epsilon})
+#'         covariance matrices using replicate data.
+#'   \item Compute the between-subject covariance matrix (\eqn{\Sigma_X}) as
+#'         \eqn{\Sigma_Z - \Sigma_\epsilon}.
+#'   \item Construct subject-specific total covariance matrices adjusted for
+#'         replicate counts.
+#'   \item Calibrate each subject’s replicate average \eqn{Z_i} to
+#'         \eqn{E[X_i \mid Z_i]} using the calibration matrix.
+#'   \item Fit a Poisson log-linear model using the calibrated exposures
+#'         \eqn{X_i^\text{hat}} and compute sandwich standard errors.
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' # Internal reliability study: 60 subjects, 2 replicates of 1 exposure
+#' z.rep <- cbind(rnorm(60), rnorm(60))
+#' zbar <- rowMeans(z.rep)
+#' Y <- rpois(60, lambda = exp(0.2 + 0.5 * zbar))
+#'
+#' # Standardize data
+#' zbar.std <- scale(zbar)
+#' sdz <- sd(zbar)
+#' z.std <- list(sbp = scale(z.rep))
+#' r <- rep(2, 60)
+#'
+#' # Naive covariance (for dimension labels)
+#' naive <- naive_analysis_in_poisson(Y = Y, zbar = zbar.std,
+#'                                    W.std = NULL, sdz = sdz, sdw = NULL)
+#'
+#' # Apply regression calibration
+#' fit <- reg_calibration_in_poisson(
+#'   Y = Y,
+#'   zbar = as.matrix(zbar.std),
+#'   z.std = z.std,
+#'   W.std = NULL,
+#'   muz = mean(zbar),
+#'   muw = NULL,
+#'   sdz = sdz,
+#'   sdw = NULL,
+#'   r = r,
+#'   var1 = naive$var1
+#' )
+#' str(fit)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm
-#' @importFrom sandwich sandwich
+
 
 
 

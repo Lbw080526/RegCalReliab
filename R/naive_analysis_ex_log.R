@@ -1,20 +1,60 @@
-#' Naive Logistic Regression Analysis (External)
+#' Naive Logistic Regression (External Reliability Study)
 #'
-#' This function performs a logistic regression analysis without any measurement error correction.
+#' \code{naive_analysis_ex_log()} fits a standard logistic regression model
+#' using only the main-study data—ignoring any measurement error in the
+#' exposure variables.
+#' It returns the uncorrected (naive) coefficient estimates, their standard
+#' errors, confidence intervals, odds ratios, and the associated covariance
+#' matrix. These results provide a benchmark for comparison with corrected
+#' regression calibration estimates.
 #'
-#' @param z.main.std Standardized main-study data.
-#' @param W.main.std Standardized covariates for the main study (optional).
-#' @param Y Binary outcome vector for the main-study subjects.
-#' @param sdz Standard deviation of the exposures in the main study.
-#' @param sdw Standard deviations of the covariates (optional).
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}), typically the \code{z.main.std} output from
+#'   \code{\link{prepare_data_ex}}.
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}); if not provided, the model is fit with
+#'   exposures only.
+#' @param Y Binary (0/1) outcome vector of length \eqn{n_m}.
+#' @param sdz Numeric vector of length \eqn{t}, giving the standard deviations
+#'   of the unstandardized exposures. Used to rescale coefficients back to the
+#'   original measurement scale.
+#' @param sdw Optional numeric vector of length \eqn{q}, giving the standard
+#'   deviations of the unstandardized covariates. Used to rescale coefficients
+#'   back to the original scale when \code{W.main.std} is supplied.
 #'
-#' @return A list containing:
-#' \itemize{
-#'   \item{\code{var1}}: Covariance matrix for the naive logistic regression.
-#'   \item{\code{Naive estimates}}: The naive logistic regression estimates and their confidence intervals.
+#' @return A list with two components:
+#' \describe{
+#'   \item{\code{var1}}{Covariance matrix of the naive logistic regression estimates.}
+#'   \item{\code{Naive estimates}}{Matrix of naive logistic regression results,
+#'         including coefficient estimates, standard errors, z-values,
+#'         p-values, odds ratios (OR), and 95\% confidence intervals on the
+#'         original scale.}
 #' }
-#' @details This function runs a logistic regression using the main-study data without measurement error correction.
-#' It returns both the estimates and the covariance matrix from the naive regression.
+#'
+#' @details
+#' This function is typically used as the first step in an external reliability
+#' study to illustrate the bias introduced by ignoring measurement error.
+#' It scales coefficients and their standard errors back to the original scale
+#' using the supplied standard deviations.
+#'
+#' @examples
+#' set.seed(1)
+#' # Simulated main-study data: 100 subjects, 1 exposure
+#' z <- matrix(rnorm(100), ncol = 1)
+#' colnames(z) <- "sbp"
+#' Y <- rbinom(100, 1, plogis(0.3 * z))
+#' sdz <- apply(z, 2, sd)
+#'
+#' # Run naive logistic regression ignoring measurement error
+#' res <- naive_analysis_ex_log(
+#'   z.main.std = scale(z),
+#'   W.main.std = NULL,
+#'   Y = Y,
+#'   sdz = sdz,
+#'   sdw = NULL
+#' )
+#' str(res)
+#'
 #' @noRd
 #' @export
 

@@ -1,43 +1,87 @@
-#' Sandwich Variance Estimator for Internal Logistic Regression
+#' Sandwich Variance Estimator for Internal Logistic Regression Calibration
 #'
-#' Computes robust (sandwich) variance-corrected coefficient estimates for
-#' logistic regression models when replicate exposure measurements are
-#' available internally (i.e., within the same main study). Accounts for
-#' measurement error by partitioning within- and between-subject variability
-#' using replicate data, and corrects standard errors via the full sandwich
-#' covariance estimator.
+#' \code{sandwich_estimator_in_log()} computes robust (sandwich) standard errors
+#' for regression calibration in logistic regression using internal replicate
+#' measurements. It propagates uncertainty from estimating calibration
+#' parameters (between- and within-subject variance components) into the final
+#' coefficient variances, yielding valid confidence intervals and p-values.
 #'
-#' @param xhat Matrix of regression-calibrated predictors for the main study.
-#' @param zbar Matrix of subject-level averaged standardized exposures.
-#' @param z.std List of standardized replicate exposure matrices.
-#' @param r Integer vector of replicate counts per subject.
-#' @param Y Binary outcome vector (0/1).
+#' @param xhat Numeric matrix of calibrated exposures (\eqn{n \times t}),
+#'   typically from \code{\link{reg_calibration_in_log}}.
+#' @param zbar Numeric matrix (\eqn{n \times t}) of standardized subject-level
+#'   replicate averages.
+#' @param z.std Named list of standardized replicate exposure matrices.
+#'   Each element is an \eqn{n \times r_i} matrix, possibly padded with \code{NA}.
+#' @param r Integer vector of replicate counts per subject (length \eqn{n}).
+#' @param Y Binary (0/1) outcome vector of length \eqn{n}.
 #' @param v12star Calibration submatrix (between-person exposure block).
-#' @param beta.fit2 Estimated regression coefficients from the corrected logistic model.
-#' @param W.std Optional standardized covariate matrix; default \code{NULL}.
-#' @param sigma Within-person covariance matrix of replicate exposures.
+#' @param beta.fit2 Numeric vector of logistic regression coefficients from the
+#'   calibrated model (\code{fit2}).
+#' @param W.std Optional numeric matrix of standardized error-free covariates
+#'   (\eqn{n \times q}); if provided, covariate variability is incorporated
+#'   into the sandwich correction.
+#' @param sigma Within-person variance matrix of replicate exposures.
 #' @param sigmawithin Estimated within-person covariance matrix.
-#' @param sigmazstar Total covariance matrix of standardized exposures (and covariates if present).
-#' @param sigmazhat Subject-specific estimated covariance matrices of exposures.
-#' @param sdz Vector of standard deviations used for exposure standardization.
-#' @param sdw Optional vector of standard deviations used for covariate standardization.
-#' @param muz Mean(s) of exposures used in standardization.
-#' @param muw Optional mean(s) of covariates used in standardization.
-#' @param fit2 Fitted logistic regression model object from the calibration step.
+#' @param sigmazstar Total covariance matrix of standardized exposures
+#'   (and covariates, if present).
+#' @param sigmazhat List (or array) of subject-specific estimated covariance
+#'   matrices adjusted for replicate counts.
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param fit2 The fitted \code{glm} object returned by \code{reg_calibration_in_log()}.
 #' @param v Normalization constant used in the variance scaling step.
 #'
+#' @return A list with one component:
+#' \describe{
+#'   \item{\code{Sandwich Corrected estimates}}{Matrix of regression calibration
+#'         estimates with sandwich-corrected standard errors, z-values,
+#'         p-values, odds ratios (OR), and 95\% confidence intervals on the
+#'         original scale.}
+#' }
 #'
 #' @details
-#' The estimator augments logistic regression calibration with internal replicate data.
-#' It constructs subject-level covariance contributions based on replicate exposures,
-#' decomposes total variability into within- and between-subject components, and uses
-#' these to form the full sandwich covariance matrix. Derivative matrices are assembled
-#' to account for covariance parameters, yielding valid inference under additive
-#' measurement error with internal replication.
+#' This function implements the full sandwich variance correction for internal
+#' reliability studies:
+#' \enumerate{
+#'   \item \strong{Variance components}: estimates within- and between-subject
+#'         covariance from replicate data.
+#'   \item \strong{Calibration}: computes calibrated predictors
+#'         \eqn{X^\text{hat}} using the estimated covariance components.
+#'   \item \strong{Outcome model}: fits a logistic regression and applies the
+#'         sandwich (robust) variance formula to propagate uncertainty from
+#'         both calibration and outcome modeling.
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' # Simulate internal replicate data: 50 subjects, 2 replicates of 1 exposure
+#' z.rep <- cbind(rnorm(50), rnorm(50))
+#' zbar <- rowMeans(z.rep)
+#' Y <- rbinom(50, 1, plogis(0.5 * zbar))
+#'
+#' # Standardize
+#' zbar.std <- scale(zbar)
+#' sdz <- sd(zbar)
+#' z.std <- list(sbp = scale(z.rep))
+#' r <- rep(2, 50)
+#'
+#' # (In practice, run reg_calibration_in_log() first to obtain xhat, fit2, etc.)
+#' # Here we show a simplified call with mock objects:
+#' # sandwich_estimator_in_log(xhat, zbar.std, z.std, r, Y,
+#' #   v12star, beta.fit2, W.std = NULL, sigma, sigmawithin,
+#' #   sigmazstar, sigmazhat, sdz, NULL, muz, NULL, fit2, v)
+#'
+#' @references
+#' Carroll RJ, Ruppert D, Stefanski LA, Crainiceanu CM. \emph{Measurement Error
+#' in Nonlinear Models: A Modern Perspective}. Chapman & Hall/CRC, 2006.
+#' White H. A heteroskedasticity-consistent covariance matrix estimator and a
+#' direct test for heteroskedasticity. \emph{Econometrica}. 1980;48(4):817–838.
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm pnorm
+
 
 
 

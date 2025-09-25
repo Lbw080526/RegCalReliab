@@ -1,28 +1,38 @@
-#' Regression Calibration for Poisson Regression (Internal Reliability Study)
+#' Regression Calibration (Internal) for Poisson Models via a Formula Interface
 #'
 #' @description
 #' A convenient wrapper that parses a measurement-error formula, prepares data,
-#' runs the naive Poisson model, performs regression calibration, and applies
-#' the sandwich correction that accounts for estimating the measurement model,
+#' runs the naive Poisson log-linear model, performs regression calibration, and
+#' applies the sandwich correction that accounts for estimating the measurement model,
 #' using internal replicate data.
 #'
 #' @param formula A formula or character string like
 #'   "Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight".
-#'   Terms of the form `var(rep1, rep2, ...)` are treated as error-prone exposures
-#'   with replicates found in `main_data`. Ordinary terms are treated as covariates W.
+#'   Terms of the form var(rep1, rep2, ...) are treated as error-prone exposures
+#'   with replicates found in main_data. Ordinary terms are treated as covariates W.
 #' @param main_data Data frame holding the outcome, replicate error-prone exposures,
 #'   and any non-error covariates.
+#' @param link Character string specifying the link function for the Poisson model
+#'   (default = "log").
 #' @param return_details Logical; if TRUE, returns additional internals (xhat, icc, etc.).
 #'
 #' @return A list with two tidy tables:
 #' \itemize{
 #'   \item \code{uncorrected}: naive Poisson regression estimates.
-#'   \item \code{corrected}: sandwich-corrected regression calibration estimates.
+#'   \item \code{corrected}: sandwich-corrected RC estimates (your final results).
 #' }
 #' If \code{return_details = TRUE}, also returns intermediate objects.
 #'
+#' @examples
+#' RC_IN_Poisson(
+#'   formula = Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight,
+#'   main_data = main,
+#'   link = "log"
+#' )
+#'
 #' @noRd
 #' @export
+
 RC_IN_Poisson <- function(formula,
                           main_data,
                           link = "log",

@@ -72,7 +72,7 @@ simulate_once = function() {
   return(res)
 }
 
-B = 1000
+B = 10
 results_list = replicate(B, simulate_once(), simplify = FALSE)
 
 # Collect naïve + corrected tables

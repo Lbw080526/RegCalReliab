@@ -1,52 +1,99 @@
-#' Regression Calibration for Linear Regression (Internal Replicate Study)
+#' Regression Calibration for Linear Regression (Internal Reliability Study)
 #'
-#' Performs regression calibration for a linear model of the outcome \code{Y}
-#' using subject-level replicate data from an internal reliability study. Corrects
-#' for classical additive measurement error by estimating between-person and within-person
-#' covariance components and computing calibrated predictors \code{xhat}.
+#' \code{reg_calibration_in_linear()} corrects for classical additive measurement
+#' error in linear regression using replicate measurements from an internal
+#' reliability study. It implements regression calibration by estimating
+#' between- and within-subject variance components from replicate data and then
+#' fitting a linear regression to the calibrated exposures. A robust (sandwich)
+#' variance estimator is used for valid inference.
 #'
-#' @param Y Numeric outcome vector of length n.
-#' @param zbar Matrix (n x t) of standardized subject-level averages of replicate exposures.
-#' @param z.std List of length \code{t}; each element is an (n x r_i) matrix of
-#'   standardized replicates for one exposure, padded with \code{NA} if fewer than
-#'   the maximum number of replicates.
-#' @param W.std Optional standardized covariate matrix (n x q); default \code{NULL}.
-#' @param muz Mean(s) of exposures used for standardization.
-#' @param muw Optional mean(s) of covariates used for standardization.
-#' @param sdz Vector of standard deviations used to standardize exposures.
-#' @param sdw Optional vector of standard deviations used to standardize covariates.
-#' @param r Integer vector of replicate counts for each subject (length n).
-#' @param var1 Naive covariance matrix of coefficients (from naive linear model),
-#'   used to set dimension names for covariance matrices.
+#' @param Y Numeric outcome vector of length \eqn{n}.
+#' @param zbar Numeric matrix (\eqn{n \times t}) of standardized subject-level
+#'   averages of replicate exposures.
+#' @param z.std Named list of length \eqn{t}; each element is an \eqn{n \times r_i}
+#'   matrix of standardized replicate measurements for one exposure, padded
+#'   with \code{NA} if fewer than the maximum number of replicates.
+#' @param W.std Optional numeric matrix of standardized error-free covariates
+#'   (\eqn{n \times q}). If omitted, calibration is performed for exposures only.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param r Integer vector of replicate counts for each subject (length \eqn{n}).
+#' @param var1 Naive covariance matrix of coefficients (from
+#'   \code{\link{naive_analysis_in_linear}}), used to set dimension names for
+#'   covariance matrices.
 #'
-#' @return A list with:
-#' \item{Corrected estimates}{Coefficient table with regression-calibrated estimates,
-#'   robust (sandwich) standard errors, and 95\% confidence intervals.}
-#' \item{icc}{Intraclass correlation matrix, quantifying reliability of the exposure(s).}
-#' \item{sigmax}{Estimated between-person covariance matrix.}
-#' \item{sigmawithin}{Estimated within-person covariance matrix.}
-#' \item{sigmazstar}{Estimated total covariance matrix based on internal replicate structure.}
-#' \item{sigmazhat}{Subject-specific total covariance matrices adjusted by replicate counts.}
-#' \item{xhat}{Matrix of regression-calibrated predictors for the main study.}
-#' \item{beta.fit2}{Vector of fitted coefficients from the corrected linear regression.}
-#' \item{v12star}{Between-person exposure block of the calibration matrix.}
-#' \item{sigma}{Within-person variance of exposures estimated from replicates.}
-#' \item{fit2}{Fitted \code{lm} object from the corrected linear regression.}
-#' \item{v}{Effective sample size adjustment factor for correlated replicates.}
+#' @return A list with the following components:
+#' \describe{
+#'   \item{\code{Corrected estimates}}{Matrix of calibrated linear regression
+#'         coefficients, robust (sandwich) standard errors, and 95\% confidence
+#'         intervals on the original scale.}
+#'   \item{\code{icc}}{Intraclass correlation (matrix) quantifying reliability
+#'         of the error-prone exposures.}
+#'   \item{\code{sigmax}}{Estimated between-person covariance matrix of the true exposures.}
+#'   \item{\code{sigmawithin}}{Estimated within-person (measurement-error) covariance matrix.}
+#'   \item{\code{sigmazstar}}{Estimated total covariance matrix based on replicate structure.}
+#'   \item{\code{sigmazhat}}{List of subject-specific total covariance matrices
+#'         adjusted for replicate counts.}
+#'   \item{\code{xhat}}{Matrix of calibrated exposure predictions used in the corrected regression.}
+#'   \item{\code{beta.fit2}}{Vector of calibrated linear regression coefficients.}
+#'   \item{\code{v12star}}{Calibration matrix used to map observed to corrected exposures.}
+#'   \item{\code{sigma}}{Within-person variance matrix estimated from replicates.}
+#'   \item{\code{fit2}}{The fitted \code{lm} object for the corrected linear regression.}
+#'   \item{\code{v}}{Effective sample size adjustment factor for correlated replicates.}
+#' }
 #'
 #' @details
-#' Internal replicate data are used to decompose the variance of observed exposures
-#' into between-person and within-person components. These components are combined
-#' to compute regression-calibrated predictors \code{xhat}, which replace the
-#' error-prone replicate averages \code{zbar} in the outcome model. Sandwich
-#' variance estimators are used to obtain robust standard errors. When covariates
-#' are included, their covariance with exposures is also incorporated into the
-#' calibration matrix.
+#' The method follows the classical regression calibration framework for
+#' internal reliability studies:
+#' \enumerate{
+#'   \item Estimate total (\eqn{\Sigma_Z}) and within-subject (\eqn{\Sigma_\epsilon})
+#'         covariance matrices using replicate data.
+#'   \item Compute the between-subject covariance matrix (\eqn{\Sigma_X}) as
+#'         \eqn{\Sigma_Z - \Sigma_\epsilon}.
+#'   \item Construct subject-specific total covariance matrices adjusted for
+#'         replicate counts.
+#'   \item Calibrate each subject’s replicate average \eqn{Z_i} to
+#'         \eqn{E[X_i | Z_i]} using the calibration matrix.
+#'   \item Fit a linear regression model using the calibrated exposures
+#'         \eqn{X_i^\text{hat}}.
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' # Internal reliability study: 60 subjects, 2 replicates of 1 exposure
+#' z.rep <- cbind(rnorm(60), rnorm(60))
+#' zbar <- rowMeans(z.rep)
+#' Y <- 2 + 0.5 * zbar + rnorm(60)
+#'
+#' # Standardize data
+#' zbar.std <- scale(zbar)
+#' sdz <- sd(zbar)
+#' z.std <- list(sbp = scale(z.rep))
+#' r <- rep(2, 60) # each subject has 2 replicates
+#'
+#' # Naive covariance (for dimension labels)
+#' naive <- naive_analysis_in_linear(Y = Y, zbar = zbar.std, W.std = NULL,
+#'                                   sdz = sdz, sdw = NULL)
+#'
+#' # Apply regression calibration
+#' fit <- reg_calibration_in_linear(
+#'   Y = Y,
+#'   zbar = as.matrix(zbar.std),
+#'   z.std = z.std,
+#'   W.std = NULL,
+#'   muz = mean(zbar),
+#'   muw = NULL,
+#'   sdz = sdz,
+#'   sdw = NULL,
+#'   r = r,
+#'   var1 = naive$var1
+#' )
+#' str(fit)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats lm
-#' @importFrom sandwich sandwich
 
 
 

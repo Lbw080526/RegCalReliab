@@ -9,21 +9,84 @@
 #'   * `"log"`      → Poisson (log link)
 #'
 #' @param formula A formula or character string such as
-#'   "Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight".
+#'   `Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight`.
 #'   Terms of the form `var(rep1, rep2, ...)` are treated as error-prone exposures
 #'   with replicates in `rep_data`; other terms are treated as covariates W.
 #' @param main_data Data frame holding the outcome, error-prone exposures, and covariates.
 #' @param rep_data  Data frame holding replicate columns referenced in `formula`.
 #' @param link Character; one of `"linear"`, `"logistic"`, or `"log"`.
-#' @param return_details Logical; if TRUE, return parsed, prepared, and RC internals.
+#' @param return_details Logical; if `TRUE`, return parsed, prepared, and RC internals.
 #'
-#' @return A list with
+#' @return A list with:
 #'   * `uncorrected`: naive regression estimates
 #'   * `corrected`  : sandwich-corrected regression calibration estimates
-#'   plus optional `details` if `return_details = TRUE`.
+#'   * optional `details` if `return_details = TRUE`
+#'
+#' @examples
+#' library(mgcv)
+#' set.seed(123)
+#' add_err <- function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+#'
+#' ## --- Example 1: External 1Z 0W ---
+#' x <- rnorm(3000)
+#' z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
+#' z_rep <- rbind(
+#'   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+#'   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+#'   cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+#' )
+#' colnames(z_rep) <- paste0("z_", 1:4)
+#' Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * x[1:1500]))
+#' main_data <- data.frame(Y = Y, z = z.main)
+#' rep_data  <- data.frame(z_rep, check.names = FALSE)
+#' res1 <- RC_ExReliab(Y ~ z(z_1, z_2, z_3, z_4), main_data, rep_data, link = "logistic")
+#' res1$corrected
+#'
+#' ## --- Example 2: External 1Z 1W ---
+#' x <- rnorm(3000)
+#' W_main <- rnorm(1500)
+#' W_rep  <- rnorm(1500)
+#' z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
+#' z_rep <- rbind(
+#'   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+#'   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+#'   cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+#' )
+#' colnames(z_rep) <- paste0("z_", 1:4)
+#' Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * x[1:1500] + 0.5 * W_main))
+#' main_data <- data.frame(Y = Y, z = z.main, W = W_main)
+#' rep_data  <- data.frame(z_rep, W = W_rep, check.names = FALSE)
+#' res2 <- RC_ExReliab(Y ~ z(z_1, z_2, z_3, z_4) + W, main_data, rep_data, link = "logistic")
+#' res2$corrected
+#'
+#' ## --- Example 3: External 2Z 0W ---
+#' x <- mgcv::rmvn(3000, c(0, 0), matrix(c(1, 0.3, 0.3, 1), 2))
+#' z.main <- x[1:1500, ] + matrix(rnorm(1500 * 2, 0, sqrt(0.4)), 1500, 2)
+#' colnames(z.main) <- c("z1", "z2")
+#' z1_rep <- rbind(
+#'   cbind(add_err(x[1501:2000, 1]), add_err(x[1501:2000, 1]), NA, NA),
+#'   cbind(add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), NA),
+#'   cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
+#' )
+#' colnames(z1_rep) <- paste0("z1_", 1:4)
+#' z2_rep <- rbind(
+#'   cbind(add_err(x[1501:2000, 2]), add_err(x[1501:2000, 2]), NA, NA),
+#'   cbind(add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), NA),
+#'   cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
+#' )
+#' colnames(z2_rep) <- paste0("z2_", 1:4)
+#' Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * rowSums(x[1:1500, ])))
+#' main_data <- data.frame(Y = Y, z1 = z.main[, 1], z2 = z.main[, 2])
+#' rep_data  <- data.frame(z1_rep, z2_rep, check.names = FALSE)
+#' res3 <- RC_ExReliab(
+#'   Y ~ z1(z1_1, z1_2, z1_3, z1_4) + z2(z2_1, z2_2, z2_3, z2_4),
+#'   main_data, rep_data, link = "logistic"
+#' )
+#' res3$corrected
 #'
 #' @export
-RC_ExReliab <- function(formula,
+
+RC_ExReliab = function(formula,
                         main_data,
                         rep_data,
                         link = c("linear", "logistic", "log"),

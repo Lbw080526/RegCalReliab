@@ -1,29 +1,91 @@
-#' Sandwich Variance Estimator for External Linear Regression Calibration
+#' Sandwich Variance Estimator for External Logistic Regression Calibration
 #'
-#' Robust (sandwich) SEs for regression-calibrated **linear** models with an
-#' external reliability study. Works with or without additional covariates W.
+#' \code{sandwich_estimator_ex_linear()} computes robust (sandwich) standard errors
+#' for regression calibration in linear regression using external reliability data.
+#' It propagates uncertainty from estimating the calibration (variance components)
+#' into the final coefficient variances, yielding valid confidence intervals and
+#' p-values even when measurement error is present.
 #'
-#' @param xhat        Matrix of calibrated predictors for the main study (n_m x t).
-#' @param z.main.std  Standardized main-study exposures (n_m x t).
-#' @param z.rep.std   List of standardized replicate matrices for reliability data.
-#' @param r           Integer vector of replicate counts (length n_r).
-#' @param Y           Numeric outcome vector (length n_m).
-#' @param indicator   Binary vector: 1 = main-study rows, 0 = reliability rows (length n_m + n_r).
-#' @param v12star     Between-person exposure block used to form xhat.
-#' @param beta.fit2   Coefficients from the corrected **linear** model (fit on xhat [+ W]).
-#' @param W.main.std  Optional standardized covariates (n_m x q).
-#' @param sigma       Within-person covariance (t x t).
-#' @param sigmaz      Total covariance of (Z[,W]) used in calibration: (t x t) or (t+q) x (t+q).
-#' @param sigmawithin Within-person covariance (same block structure as sigmaz).
-#' @param sdz         Vector of SDs used to standardize exposures (length t).
-#' @param sdw         Optional vector of SDs used to standardize covariates (length q).
-#' @param fit2        The fitted linear model object from the calibration step (for coefficient table).
+#' @param xhat Numeric matrix of calibrated exposures (\eqn{n_m \times t}),
+#'   typically obtained from \code{\link{reg_calibration_ex_linear}}.
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}).
+#' @param z.rep.std Named list of standardized replicate measurements from the
+#'   external reliability study. Each list element is a matrix of dimension
+#'   \eqn{n_r \times r_i} for a particular exposure.
+#' @param r Integer vector of replicate counts for all subjects
+#'   (length \eqn{n_m + n_r}); main-study subjects should have value 1.
+#' @param Y Numeric outcome vector of length \eqn{n_m}.
+#' @param indicator Binary vector of length \eqn{n_m + n_r} indicating main-study
+#'   (1) vs. reliability-study (0) subjects.
+#' @param v12star Calibration matrix (\eqn{\Sigma_X \Sigma_Z^{-1}\Sigma_{XZ}})
+#'   used to form \code{xhat}.
+#' @param beta.fit2 Numeric vector of regression coefficients from the corrected
+#'   linear model (\code{fit2}).
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}). If not provided, the model is fit with
+#'   exposures only.
+#' @param sigma Within-person variance-covariance matrix of the exposures.
+#' @param sigmaz Total variance-covariance matrix of the observed exposures
+#'   (and covariates, if applicable).
+#' @param sigmawithin Estimated within-person covariance matrix (same dimension
+#'   as \code{sigmaz}).
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param fit2 The \code{lm} object returned by
+#'   \code{\link{reg_calibration_ex_linear}}.
 #'
-#' @return list with element `Sandwich Corrected estimates`: coefficient table with
-#'         Estimate, Std. Error, z value, Pr(>|z|), CI.low, CI.high,
-#'         transformed back to original exposure/covariate scales via (sdz, sdw).
+#' @return A list with one component:
+#' \describe{
+#'   \item{\code{Sandwich Corrected estimates}}{Matrix of regression calibration
+#'         estimates with sandwich-corrected standard errors, t-values,
+#'         p-values, and 95\% confidence intervals on the original scale.}
+#' }
+#'
+#' @details
+#' This function implements the three-block estimating equation described in
+#' Carroll et al. (2006) and White (1980):
+#' \enumerate{
+#'   \item \strong{Variance components}: estimates total and within-person covariance.
+#'   \item \strong{Calibration}: computes \eqn{X^\text{hat}} using the
+#'         estimated variance components.
+#'   \item \strong{Outcome model}: fits a linear regression and applies a
+#'         sandwich (robust) variance formula to combine the uncertainty from
+#'         all stages.
+#' }
+#'
+#' @examples
+#' set.seed(1)
+#' # Simulated main-study data: 80 subjects, 1 exposure
+#' z <- matrix(rnorm(80), ncol = 1)
+#' colnames(z) <- "sbp"
+#' Y <- 2 + 0.5 * z + rnorm(80)
+#'
+#' # Reliability study: 40 subjects, 2 replicates
+#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' zbar  <- sapply(z.rep, rowMeans)
+#'
+#' # Standardize data
+#' sdz <- apply(z, 2, sd)
+#' z.main.std <- scale(z)
+#' z.rep.std  <- list(sbp = scale(z.rep$sbp))
+#' r <- c(rep(1, 80), rep(2, 40))
+#' indicator <- c(rep(1, 80), rep(0, 40))
+#'
+#' # (In practice, run reg_calibration_ex_linear() first to get xhat, fit2, etc.)
+#' # sandwich_estimator_ex_linear(xhat, z.main.std, z.rep.std, r, Y,
+#' #   indicator, v12star, beta.fit2, sigma, sigmaz, sigmawithin,
+#' #   sdz, fit2 = fit2)
+#'
+#' @references
+#' Carroll RJ, Ruppert D, Stefanski LA, Crainiceanu CM. \emph{Measurement Error
+#' in Nonlinear Models: A Modern Perspective}. Chapman & Hall/CRC, 2006.
+#' White H. A heteroskedasticity-consistent covariance matrix estimator and a
+#' direct test for heteroskedasticity. \emph{Econometrica}. 1980;48(4):817–838.
+#'
 #' @noRd
 #' @export
+
 
 sandwich_estimator_ex_linear <- function(
     xhat, z.main.std, z.rep.std, r, Y, indicator, v12star, beta.fit2,

@@ -9,18 +9,79 @@
 #'   * `"log"`      → Poisson (log link)
 #'
 #' @param formula A formula or character string such as
-#'   "Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight".
+#'   `Y ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight`.
 #'   Terms of the form `var(rep1, rep2, ...)` are treated as error-prone exposures
 #'   with replicates in `main_data`; other terms are treated as covariates W.
 #' @param main_data Data frame holding the outcome, replicate error-prone exposures,
 #'   and any covariates.
 #' @param link Character; one of `"linear"`, `"logistic"`, or `"log"`.
-#' @param return_details Logical; if TRUE, return parsed, prepared, and RC internals.
+#' @param return_details Logical; if `TRUE`, return parsed, prepared, and RC internals.
 #'
-#' @return A list with
+#' @return A list with:
 #'   * `uncorrected`: naive regression estimates
 #'   * `corrected`  : sandwich-corrected regression calibration estimates
-#'   plus optional `details` if `return_details = TRUE`.
+#'   * optional `details` if `return_details = TRUE`
+#'
+#' @examples
+#' set.seed(123)
+#' add_err <- function(v, sd = sqrt(0.4)) v + rnorm(length(v), 0, sd)
+#'
+#' ## --- Example 1: Internal 1Z 0W ---
+#' x <- rnorm(3000)
+#' z <- rbind(
+#'   cbind(add_err(x[1:1500]), NA, NA, NA),
+#'   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+#'   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+#'   cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+#' )
+#' colnames(z) <- paste0("z_", 1:4)
+#' Y <- rbinom(3000, 1, plogis(-2.65 + log(1.5) * x))
+#' main_data <- data.frame(Y, z)
+#' res1 <- RC_InReliab(Y ~ myz(z_1, z_2, z_3, z_4),
+#'                     main_data = main_data,
+#'                     link = "logistic")
+#' res1$corrected
+#'
+#' ## --- Example 2: Internal 1Z 1W ---
+#' x  <- rnorm(3000)
+#' W1 <- rnorm(3000)
+#' z <- rbind(
+#'   cbind(add_err(x[1:1500]), NA, NA, NA),
+#'   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
+#'   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
+#'   cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+#' )
+#' colnames(z) <- paste0("z_", 1:4)
+#' Y <- rbinom(3000, 1, plogis(-2.65 + log(1.5) * x + 0.5 * W1))
+#' main_data <- data.frame(Y, z, W1)
+#' res2 <- RC_InReliab(Y ~ myz(z_1, z_2, z_3, z_4) + W1,
+#'                     main_data = main_data,
+#'                     link = "logistic")
+#' res2$corrected
+#'
+#' ## --- Example 3: Internal 2Z 0W ---
+#' x <- mgcv::rmvn(3000, c(0,0), matrix(c(1,0.3,0.3,1), 2))
+#' z1 <- rbind(
+#'   cbind(add_err(x[1:1500, 1]), NA, NA, NA),
+#'   cbind(add_err(x[1501:2000, 1]), add_err(x[1501:2000, 1]), NA, NA),
+#'   cbind(add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), NA),
+#'   cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
+#' )
+#' colnames(z1) <- paste0("z1_", 1:4)
+#' z2 <- rbind(
+#'   cbind(add_err(x[1:1500, 2]), NA, NA, NA),
+#'   cbind(add_err(x[1501:2000, 2]), add_err(x[1501:2000, 2]), NA, NA),
+#'   cbind(add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), NA),
+#'   cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
+#' )
+#' colnames(z2) <- paste0("z2_", 1:4)
+#' Y <- rbinom(3000, 1, plogis(-2.65 + log(1.5) * rowSums(x)))
+#' main_data <- data.frame(Y, z1, z2)
+#' res3 <- RC_InReliab(
+#'   Y ~ myz1(z1_1, z1_2, z1_3, z1_4) + myz2(z2_1, z2_2, z2_3, z2_4),
+#'   main_data = main_data,
+#'   link = "logistic")
+#' res3$corrected
 #'
 #' @export
 

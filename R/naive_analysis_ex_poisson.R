@@ -1,29 +1,62 @@
-#' Naive Poisson Regression Analysis (External)
+#' Naive Poisson Regression (External Reliability Study)
 #'
-#' Fits a Poisson GLM of the count outcome \code{Y} on the observed
-#' (error-prone) exposure(s) \code{z.main.std}, with optional covariates
-#' \code{W.main.std}, without any measurement-error correction.
+#' \code{naive_analysis_ex_poisson()} fits a standard poisson regression model
+#' using only the main-study data—ignoring any measurement error in the
+#' exposure variables.
+#' It returns the uncorrected (naive) coefficient estimates, their standard
+#' errors, confidence intervals, exponentiated rate ratios, and the associated
+#' covariance matrix. These results provide a benchmark for comparison with
+#' corrected regression calibration estimates.
 #'
-#' @param z.main.std Matrix (n_m x t) of standardized error-prone exposure(s) from the main study.
-#' @param W.main.std Optional matrix (n_m x q) of standardized covariates from the main study; default \code{NULL}.
-#' @param Y Non-negative integer count outcome vector of length n_m.
-#' @param sdz Vector of standard deviations used to standardize \code{z.main.std}.
-#' @param sdw Optional vector of standard deviations used to standardize \code{W.main.std}.
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}), typically the \code{z.main.std} output from
+#'   \code{\link{prepare_data_ex}}.
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}); if not provided, the model is fit with
+#'   exposures only.
+#' @param Y Non-negative integer count outcome vector of length \eqn{n_m}.
+#' @param sdz Numeric vector of length \eqn{t}, giving the standard deviations
+#'   of the unstandardized exposures. Used to rescale coefficients back to the
+#'   original measurement scale.
+#' @param sdw Optional numeric vector of length \eqn{q}, giving the standard
+#'   deviations of the unstandardized covariates. Used to rescale coefficients
+#'   back to the original scale when \code{W.main.std} is supplied.
 #'
+#' @return A list with two components:
+#' \describe{
+#'   \item{\code{var1}}{Covariance matrix of the naive Poisson regression estimates.}
+#'   \item{\code{Naive estimates}}{Matrix of naive Poisson regression results,
+#'         including coefficient estimates, standard errors, z-values,
+#'         p-values, exponentiated coefficients (rate ratios), and 95\% confidence
+#'         intervals on the original scale.}
+#' }
 #'
 #' @details
-#' This baseline model ignores measurement error and is used for comparison
-#' against regression-calibrated analyses. The coefficient table includes:
-#' \itemize{
-#'   \item Point estimates for coefficients
-#'   \item Standard errors (SE)
-#'   \item 95\% confidence intervals (CI)
-#'   \item Exponentiated coefficients (rate ratios)
-#' }
+#' This function is typically used as the first step in an external reliability
+#' study to illustrate the bias introduced by ignoring measurement error.
+#' It scales coefficients and their standard errors back to the original scale
+#' using the supplied standard deviations.
+#'
+#' @examples
+#' set.seed(1)
+#' # Simulated main-study data: 100 subjects, 1 exposure
+#' z <- matrix(rnorm(100), ncol = 1)
+#' colnames(z) <- "exposure"
+#' Y <- rpois(100, lambda = exp(0.2 + 0.3 * z))
+#' sdz <- apply(z, 2, sd)
+#'
+#' # Run naive Poisson regression ignoring measurement error
+#' res <- naive_analysis_ex_poisson(
+#'   z.main.std = scale(z),
+#'   W.main.std = NULL,
+#'   Y = Y,
+#'   sdz = sdz,
+#'   sdw = NULL
+#' )
+#' str(res)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm vcov poisson
 
 
 naive_analysis_ex_poisson = function(z.main.std, W.main.std = NULL, Y, sdz, sdw) {

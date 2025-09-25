@@ -1,52 +1,94 @@
 #' Regression Calibration for Linear Regression (External Reliability Study)
 #'
-#' Performs regression calibration for a linear model of the outcome \code{Y}
-#' using main-study error-prone exposures \code{z.main.std} and replicate data
-#' from an external reliability study (\code{z.rep.std}, \code{r}, \code{indicator}).
-#' Corrects for classical additive measurement error by estimating between-person
-#' and within-person covariance components and computing calibrated predictors
-#' \code{xhat}. Fits the corrected linear regression with optional covariates
-#' \code{W.main.std}.
+#' \code{reg_calibration_ex_linear()} corrects for classical additive measurement
+#' error in logistic regression using data from an external reliability study.
+#' It implements regression calibration by estimating between- and within-subject
+#' variance components from replicate measurements and then fitting a logistic
+#' regression to the calibrated exposures.
+#' A robust (sandwich) variance estimator is used for valid inference.
 #'
-#' @param z.main.std Matrix (n_m x t) of standardized error-prone exposure(s) from the main study.
-#' @param z.rep.std List of length \code{t}; each element is an (n_r x r_i) matrix of
-#'   standardized replicate measurements for the corresponding exposure in the reliability study.
-#' @param r Integer vector of replicate counts for each subject (length n_m + n_r).
-#'   Main-study subjects should have replicate count 1.
-#' @param W.main.std Optional matrix (n_m x q) of standardized covariates for the main study; default \code{NULL}.
-#' @param Y Numeric outcome vector of length n_m (main-study subjects).
-#' @param muz Mean(s) of exposures used for standardization.
-#' @param muw Optional mean(s) of covariates used for standardization.
-#' @param sdz Vector of standard deviations used to standardize \code{z.main.std}.
-#' @param sdw Optional vector of standard deviations used to standardize \code{W.main.std}.
-#' @param indicator Binary vector (length n_m + n_r): 1 = main-study subject, 0 = reliability subject.
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}), typically the \code{z.main.std} output from
+#'   \code{\link{prepare_data_ex}}.
+#' @param z.rep.std Named list of standardized replicate measurements from the
+#'   external reliability study. Each list element is a matrix of dimension
+#'   \eqn{n_r \times r_i} for a particular exposure.
+#' @param r Integer vector of replicate counts for reliability-study subjects,
+#'   of length \eqn{n_m + n_r}, with main-study subjects coded as 1.
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}). If omitted, the calibration is performed
+#'   for exposures only.
+#' @param Y Numeric outcome vector of length \eqn{n_m}.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param indicator Binary vector of length \eqn{n_m + n_r} indicating main-study
+#'   (1) vs. reliability-study (0) subjects.
 #'
-#' @return A list with:
-#' \item{Corrected estimates}{Coefficient table with regression-calibrated estimates,
-#'   robust (sandwich) standard errors, and 95\% confidence intervals.}
-#' \item{icc}{Intraclass correlation matrix, quantifying reliability of the exposure(s).}
-#' \item{sigmax}{Estimated between-person covariance matrix.}
-#' \item{sigmawithin}{Estimated within-person covariance matrix.}
-#' \item{sigmaz}{Total observed covariance matrix of error-prone exposures (and covariates if included).}
-#' \item{xhat}{Matrix of regression-calibrated predictors for the main study.}
-#' \item{beta.fit2}{Vector of fitted coefficients from the corrected linear regression.}
-#' \item{v12star}{Between-person exposure block of the calibration matrix.}
-#' \item{sigma}{Within-person variance of exposures estimated from replicates.}
-#' \item{fit2}{Fitted \code{lm} object from the corrected linear regression.}
+#' @return A list with the following components:
+#' \describe{
+#'   \item{\code{Corrected estimates}}{Matrix of regression-calibrated
+#'         coefficients, sandwich standard errors, t-values, p-values,
+#'         and 95\% confidence intervals on the original scale.}
+#'   \item{\code{icc}}{Intraclass correlation (matrix) quantifying reliability
+#'         of the error-prone exposures.}
+#'   \item{\code{sigmax}}{Estimated between-person covariance matrix of the true exposures.}
+#'   \item{\code{sigmawithin}}{Estimated within-person (measurement-error) covariance matrix.}
+#'   \item{\code{sigmaz}}{Estimated total covariance matrix of the observed exposures.}
+#'   \item{\code{xhat}}{Matrix of calibrated exposure predictions used in the corrected regression.}
+#'   \item{\code{beta.fit2}}{Vector of calibrated linear regression coefficients.}
+#'   \item{\code{v12star}}{Calibration matrix used to map observed to corrected exposures.}
+#'   \item{\code{sigma}}{Within-person variance matrix used in the calibration step.}
+#'   \item{\code{fit2}}{The fitted \code{lm} object for the corrected linear regression.}
+#' }
 #'
 #' @details
-#' The method uses replicate data to decompose the variance of observed exposures
-#' into between-person and within-person components. These variance components
-#' are then used to compute regression-calibrated predictors \code{xhat}, which
-#' replace the error-prone exposures in the outcome model. Sandwich variance
-#' estimators are used to obtain robust standard errors. When covariates are
-#' included, their covariance with exposures is also incorporated into the
-#' calibration matrix.
+#' The method follows the classical regression calibration framework for
+#' external reliability studies:
+#' 1. Estimate total (\eqn{\Sigma_Z}) and within-subject (\eqn{\Sigma_\epsilon})
+#'    covariance matrices using main-study and reliability-study data.
+#' 2. Compute the between-subject covariance matrix (\eqn{\Sigma_X}) as
+#'    \eqn{\Sigma_Z - \Sigma_\epsilon}.
+#' 3. Calibrate each main-study measurement \eqn{Z_i} to
+#'    \eqn{E[X_i | Z_i]} using the calibration matrix
+#'    \eqn{\Sigma_X \Sigma_Z^{-1}}.
+#' 4. Fit a linear regression of \eqn{Y} on \eqn{X^\text{hat}} (and optional covariates).
+#'
+#' @examples
+#' set.seed(1)
+#' # Simulated main-study data: 80 subjects, 1 exposure
+#' z <- matrix(rnorm(80), ncol = 1)
+#' colnames(z) <- "sbp"
+#' Y <- 2 + 0.5 * z + rnorm(80)
+#'
+#' # Reliability study: 40 subjects, 2 replicates
+#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' r <- c(rep(1, 80), rep(2, 40))
+#' indicator <- c(rep(1, 80), rep(0, 40))
+#'
+#' # Standardize data
+#' sdz <- apply(z, 2, sd)
+#' z.main.std <- scale(z)
+#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#'
+#' # Run regression calibration
+#' fit <- reg_calibration_ex_linear(
+#'   z.main.std = z.main.std,
+#'   z.rep.std  = z.rep.std,
+#'   r          = r,
+#'   W.main.std = NULL,
+#'   Y          = Y,
+#'   muz        = colMeans(z),
+#'   muw        = NULL,
+#'   sdz        = sdz,
+#'   sdw        = NULL,
+#'   indicator  = indicator
+#' )
+#' str(fit)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats lm
-#' @importFrom sandwich sandwich
 
 
 

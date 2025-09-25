@@ -1,31 +1,64 @@
-#' Naive Logistic Regression Analysis (Internal)
+#' Naive Logistic Regression (Internal Reliability Study)
 #'
-#' Fits a logistic regression of the binary outcome \code{Y} on the subject-level
-#' averaged exposure(s) \code{zbar}, with optional covariates \code{W.std}.
-#' This baseline internal analysis ignores measurement-error correction beyond
-#' taking replicate averages.
+#' \code{naive_analysis_in_log()} fits a standard logistic regression model
+#' using subject-level averages of replicate measurements from an internal
+#' reliability study—ignoring any further measurement-error correction.
+#' It returns the uncorrected (naive) coefficient estimates, their standard
+#' errors, confidence intervals, odds ratios, and the associated covariance
+#' matrix. These results provide a benchmark for comparison with corrected
+#' regression calibration estimates.
 #'
-#' @param zbar Numeric vector or matrix of standardized averages of exposure replicates.
-#' @param W.std Optional standardized covariate matrix; default \code{NULL}.
-#' @param Y Binary outcome vector of length n_m.
-#' @param sdz Vector of standard deviations used to standardize \code{zbar}.
-#' @param sdw Optional vector of standard deviations used to standardize \code{W.std}.
+#' @param zbar Numeric vector or matrix of standardized subject-level averages
+#'   of exposure replicates (\eqn{n \times t}).
+#' @param W.std Optional numeric matrix of standardized error-free covariates
+#'   (\eqn{n \times q}); if not provided, the model is fit with exposures only.
+#' @param Y Binary (0/1) outcome vector of length \eqn{n}.
+#' @param sdz Numeric vector of length \eqn{t}, giving the standard deviations
+#'   of the unstandardized exposures. Used to rescale coefficients back to the
+#'   original measurement scale.
+#' @param sdw Optional numeric vector of length \eqn{q}, giving the standard
+#'   deviations of the unstandardized covariates. Used to rescale coefficients
+#'   back to the original scale when \code{W.std} is supplied.
 #'
+#' @return A list with two components:
+#' \describe{
+#'   \item{\code{var1}}{Covariance matrix of the naive logistic regression estimates.}
+#'   \item{\code{Naive estimates}}{Matrix of naive logistic regression results,
+#'         including coefficient estimates, standard errors, z-values,
+#'         p-values, odds ratios (OR), and 95\% confidence intervals on the
+#'         original scale.}
+#' }
 #'
 #' @details
-#' This baseline model ignores measurement error beyond averaging replicates
-#' and is used for comparison against regression-calibrated analyses. The coefficient
-#' table will include:
-#' \itemize{
-#'   \item Point estimates for coefficients
-#'   \item Standard errors (SE)
-#'   \item 95% Confidence intervals (CI) for each coefficient
-#'   \item Odds ratios (exponentiated coefficients)
-#' }
+#' This function is typically used as the first step in an internal reliability
+#' study to illustrate the bias introduced by ignoring measurement error.
+#' It scales coefficients and their standard errors back to the original scale
+#' using the supplied standard deviations.
+#'
+#' @examples
+#' set.seed(1)
+#' # Simulated internal data: 100 subjects, 2 replicates of 1 exposure
+#' z.rep <- cbind(rnorm(100), rnorm(100))
+#' zbar <- rowMeans(z.rep)
+#' Y <- rbinom(100, 1, plogis(0.5 * zbar))
+#'
+#' # Standardize and get SDs
+#' zbar.std <- scale(zbar)
+#' sdz <- sd(zbar)
+#'
+#' # Run naive logistic regression ignoring measurement error
+#' res <- naive_analysis_in_log(
+#'   zbar = zbar.std,
+#'   W.std = NULL,
+#'   Y = Y,
+#'   sdz = sdz,
+#'   sdw = NULL
+#' )
+#' str(res)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm vcov
+
 
 
 

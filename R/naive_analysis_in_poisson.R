@@ -1,30 +1,56 @@
-#' Naive Poisson (Log-Linear) Analysis (Internal)
+#' Naive Poisson Regression (Internal Reliability Study)
 #'
-#' Fits a Poisson GLM with log link of the count outcome \code{Y} on the
-#' subject-level averaged exposure(s) \code{zbar}, with optional covariates
-#' \code{W.std}, without any measurement-error correction.
+#' \code{naive_analysis_in_poisson()} fits a standard Poisson log-linear model
+#' using only subject-level averaged replicates, ignoring measurement error
+#' beyond replicate averaging. This provides the uncorrected (naive) estimates
+#' as a benchmark for comparison with regression-calibrated results.
 #'
-#' @param zbar Numeric vector or matrix of standardized averages of exposure replicates.
-#' @param W.std Optional standardized covariate matrix; default \code{NULL}.
-#' @param Y Non-negative integer count outcome vector of length n_m.
-#' @param sdz Vector of standard deviations used to standardize \code{zbar}.
-#' @param sdw Optional vector of standard deviations used to standardize \code{W.std}.
+#' @param zbar Numeric vector or matrix of standardized subject-level averaged
+#'   exposures (\eqn{n \times t}), typically output from
+#'   \code{\link{prepare_data_in}}.
+#' @param W.std Optional numeric matrix of standardized error-free covariates
+#'   (\eqn{n \times q}); default \code{NULL}.
+#' @param Y Non-negative integer outcome vector of length \eqn{n}.
+#' @param sdz Numeric vector of length \eqn{t}, giving the standard deviations
+#'   of the unstandardized exposures (used to rescale coefficients).
+#' @param sdw Optional numeric vector of length \eqn{q}, giving the standard
+#'   deviations of the unstandardized covariates (used to rescale coefficients).
 #'
+#' @return A list with two components:
+#' \describe{
+#'   \item{\code{var1}}{Covariance matrix of the naive Poisson regression estimates.}
+#'   \item{\code{Naive estimates}}{Matrix of naive Poisson regression results,
+#'         including coefficient estimates, standard errors, z-values, p-values,
+#'         rate ratios (RR), and 95\% confidence intervals on the original scale.}
+#' }
 #'
 #' @details
-#' This baseline model ignores measurement error beyond averaging replicates
-#' and is used for comparison against regression-calibrated analyses. The coefficient
-#' table will include:
-#' \itemize{
-#'   \item Point estimates for coefficients
-#'   \item Standard errors (SE)
-#'   \item 95% Confidence intervals (CI) for each coefficient
-#'   \item Exponentiated coefficients (rate ratios, RR)
-#' }
+#' This baseline model uses replicate-averaged exposures and ignores
+#' measurement-error correction. Coefficients and standard errors are scaled
+#' back to the original exposure (and covariate) scales using the supplied
+#' standard deviations.
+#'
+#' @examples
+#' set.seed(123)
+#' # Simulated replicate data: 100 subjects, 1 exposure with 2 replicates
+#' z.rep <- cbind(rnorm(100), rnorm(100))
+#' zbar <- rowMeans(z.rep)
+#' Y <- rpois(100, exp(0.3 + 0.5 * zbar))
+#' sdz <- sd(zbar)
+#'
+#' # Run naive Poisson regression
+#' res <- naive_analysis_in_poisson(
+#'   Y = Y,
+#'   zbar = scale(zbar),
+#'   W.std = NULL,
+#'   sdz = sdz,
+#'   sdw = NULL
+#' )
+#' str(res)
 #'
 #' @noRd
 #' @export
-#' @importFrom stats glm vcov poisson
+
 
 
 naive_analysis_in_poisson = function(Y, zbar, W.std = NULL, sdz, sdw) {

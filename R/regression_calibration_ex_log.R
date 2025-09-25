@@ -1,19 +1,95 @@
 #' Regression Calibration for Logistic Regression (External Reliability Study)
 #'
-#' This function applies regression calibration to correct measurement error in the logistic regression model.
+#' \code{reg_calibration_ex_log()} corrects for classical additive measurement
+#' error in logistic regression using data from an external reliability study.
+#' It implements regression calibration by estimating between- and within-subject
+#' variance components from replicate measurements and then fitting a logistic
+#' regression to the calibrated exposures.
+#' A robust (sandwich) variance estimator is used for valid inference.
 #'
-#' @param z.main.std Standardized main-study data.
-#' @param z.rep.std Standardized reliability-study data.
-#' @param r Integer vector of replicate counts for reliability-study subjects.
-#' @param W.main.std Standardized covariates for the main study (optional).
-#' @param Y Binary outcome vector for the main-study subjects.
-#' @param muz Mean(s) of exposures used for standardization.
-#' @param muw Optional mean(s) of covariates used for standardization.
-#' @param sdz Standard deviations used to standardize z.main.
-#' @param sdw Standard deviations used to standardize W.main.
-#' @param indicator Indicator vector for main-study and reliability-study subjects.
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}), typically the \code{z.main.std} output from
+#'   \code{\link{prepare_data_ex}}.
+#' @param z.rep.std Named list of standardized replicate measurements from the
+#'   external reliability study. Each list element is a matrix of dimension
+#'   \eqn{n_r \times r_i} for a particular exposure.
+#' @param r Integer vector of replicate counts for reliability-study subjects,
+#'   of length \eqn{n_m + n_r}, with main-study subjects coded as 1.
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}). If omitted, the calibration is performed
+#'   for exposures only.
+#' @param Y Binary (0/1) outcome vector of length \eqn{n_m}.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param indicator Binary vector of length \eqn{n_m + n_r} indicating main-study
+#'   (1) vs. reliability-study (0) subjects.
 #'
-#' @return A list containing the regression calibration results, including calibrated estimates and variance components.
+#' @return A list with the following components:
+#' \describe{
+#'   \item{\code{Corrected estimates}}{Matrix of calibrated logistic regression
+#'         coefficients, standard errors (using the sandwich estimator),
+#'         z-values, p-values, odds ratios, and 95\% confidence intervals on
+#'         the original scale.}
+#'   \item{\code{icc}}{Intraclass correlation (matrix) quantifying reliability
+#'         of the error-prone exposures.}
+#'   \item{\code{sigmax}}{Estimated between-person covariance matrix of the true exposures.}
+#'   \item{\code{sigmawithin}}{Estimated within-person (measurement-error) covariance matrix.}
+#'   \item{\code{sigmaz}}{Estimated total covariance matrix of the observed exposures.}
+#'   \item{\code{xhat}}{Matrix of calibrated exposure predictions used in the corrected regression.}
+#'   \item{\code{beta.fit2}}{Vector of calibrated logistic regression coefficients.}
+#'   \item{\code{v12star}}{Calibration matrix used to map observed to corrected exposures.}
+#'   \item{\code{sigma}}{Within-person variance matrix used in the calibration step.}
+#'   \item{\code{fit2}}{The fitted \code{glm} object for the corrected logistic regression.}
+#'   \item{\code{zbar}}{Matrix of subject-level means of replicate measurements
+#'         in the reliability study.}
+#' }
+#'
+#' @details
+#' The method follows the classical regression calibration framework for
+#' external reliability studies:
+#' 1. Estimate total (\eqn{\Sigma_Z}) and within-subject (\eqn{\Sigma_\epsilon})
+#'    covariance matrices using main-study and reliability-study data.
+#' 2. Compute the between-subject covariance matrix (\eqn{\Sigma_X}) as
+#'    \eqn{\Sigma_Z - \Sigma_\epsilon}.
+#' 3. Calibrate each main-study measurement \eqn{Z_i} to
+#'    \eqn{E[X_i | Z_i]} using the calibration matrix
+#'    \eqn{\Sigma_X \Sigma_Z^{-1}}.
+#' 4. Fit a logistic regression model using the calibrated exposures \eqn{X_i^\text{hat}}.
+#'
+#' @examples
+#' set.seed(123)
+#' # Simulated main-study data: 80 subjects, 1 exposure
+#' z.main <- matrix(rnorm(80), ncol = 1)
+#' colnames(z.main) <- "sbp"
+#' Y <- rbinom(80, 1, plogis(0.3 * z.main))
+#'
+#' # Reliability study: 40 subjects, 2 replicates
+#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' r <- c(rep(1, 80), rep(2, 40)) # replicate counts
+#' indicator <- c(rep(1, 80), rep(0, 40))
+#'
+#' # Standardize data
+#' sdz <- apply(z.main, 2, sd)
+#' z.main.std <- scale(z.main)
+#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#'
+#' # Apply regression calibration
+#' fit <- reg_calibration_ex_log(
+#'   z.main.std = z.main.std,
+#'   z.rep.std  = z.rep.std,
+#'   r          = r,
+#'   W.main.std = NULL,
+#'   Y          = Y,
+#'   muz        = colMeans(z.main),
+#'   muw        = NULL,
+#'   sdz        = sdz,
+#'   sdw        = NULL,
+#'   indicator  = indicator
+#' )
+#' str(fit)
+#'
 #' @noRd
 #' @export
 

@@ -1,40 +1,68 @@
-#' Prepare and Standardize Data (Internal Replicate Study)
+#' Prepare and Standardize Data for Internal Reliability Study
 #'
-#' Combines replicate measurements \code{z} from an internal reliability study,
-#' constructs replicate counts \code{r}, computes subject-level averages
-#' \code{zbar}, and standardizes exposures (and optional covariates \code{W})
-#' using means/SDs across all replicates. Returns standardized replicate-level
-#' and subject-level data for subsequent naive, calibration, and sandwich analyses.
+#' \code{prepare_data_in()} processes replicate measurements from an internal
+#' reliability study, constructs replicate counts, computes subject-level
+#' averages, and standardizes exposures (and optional covariates). It returns
+#' replicate-level and subject-level standardized data for downstream naive,
+#' calibration, and sandwich analyses.
 #'
-#' @param r Integer vector of replicate counts (length n).
-#' @param z List of length \code{t}; each element is an (n x r_i) matrix of
-#'   repeated measurements for one error-prone exposure. Elements may differ
-#'   in number of columns (replicates).
-#' @param W Optional matrix of additional covariates; default \code{NULL}.
-#' @param Y Outcome vector (length n).
+#' Typical usage:
+#' \enumerate{
+#'   \item Pads each replicate matrix to match the maximum number of replicates.
+#'   \item Computes pooled means and standard deviations across all replicates.
+#'   \item Standardizes replicate-level data and subject-level averages.
+#'   \item Standardizes optional covariates if supplied.
+#'   \item Returns standardized replicates, averages, replicate counts, and
+#'         auxiliary information.
+#' }
 #'
-#' @return A list with:
-#' \item{z.std}{List of length \code{t}; each element is an (n x r_max) matrix
-#'   of standardized replicates, padded with \code{NA} if fewer than the maximum
-#'   number of replicates.}
-#' \item{zbar}{Matrix (n x t) of standardized subject-level averages of replicates.}
-#' \item{W.std}{If \code{W} supplied: standardized covariate matrix (n x q).}
-#' \item{Y}{Outcome vector (length n).}
-#' \item{r}{Integer vector of replicate counts (length n).}
-#' \item{means}{List of means used for standardization: \code{z}, and \code{w}
-#'   if covariates are provided.}
-#' \item{sds}{List of standard deviations used for standardization: \code{z}, and
-#'   \code{w} if covariates are provided.}
+#' @param r Integer vector of length \eqn{n}, giving the number of replicates
+#'   available for each subject.
+#' @param z A named list of length \eqn{t}; each element is an \eqn{n \times r_i}
+#'   matrix of replicate measurements for one error-prone exposure. Different
+#'   exposures may have different numbers of replicates.
+#' @param W Optional numeric matrix of covariates without measurement error
+#'   (\eqn{n \times q}). If supplied, all covariates are centered and scaled.
+#' @param Y Outcome vector of length \eqn{n}.
 #'
-#' @details
-#' Standardization is performed using the pooled mean and
-#' standard deviation across all replicates. Replicate matrices \code{z}
-#' are padded with \code{NA} to achieve equal width
-#' across exposures. Subject-level averages \code{zbar}
-#' are computed as row means of standardized replicates, ignoring \code{NA}.
+#' @return A list containing:
+#' \describe{
+#'   \item{\code{z.std}}{List of standardized replicate matrices, each padded to
+#'         the maximum number of replicates.}
+#'   \item{\code{zbar}}{Matrix (\eqn{n \times t}) of standardized subject-level
+#'         averages of replicates.}
+#'   \item{\code{W.std}}{Standardized covariate matrix (\eqn{n \times q}) if
+#'         \code{W} is supplied.}
+#'   \item{\code{Y}}{Outcome vector of length \eqn{n}.}
+#'   \item{\code{r}}{Integer vector of replicate counts of length \eqn{n}.}
+#'   \item{\code{means}}{List of means used for standardization: \code{z} for
+#'         exposures, and \code{w} for covariates if applicable.}
+#'   \item{\code{sds}}{List of standard deviations used for standardization:
+#'         \code{z} for exposures, and \code{w} for covariates if applicable.}
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' # Internal study: 5 subjects, 1 exposure with 2 replicates
+#' z <- list(
+#'   sbp = cbind(rnorm(5, 120, 15), rnorm(5, 120, 15))
+#' )
+#'
+#' # Replicate counts (each subject has 2 replicates)
+#' r <- rep(2, 5)
+#'
+#' # Outcome and optional covariate
+#' Y <- rbinom(5, 1, 0.5)
+#' W <- matrix(rnorm(5), ncol = 1)
+#' colnames(W) <- "age"
+#'
+#' # Prepare and standardize data
+#' prep <- prepare_data_in(r = r, z = z, W = W, Y = Y)
+#' str(prep)
 #'
 #' @noRd
 #' @export
+
 
 
 

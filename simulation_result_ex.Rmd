@@ -72,7 +72,7 @@ simulate_once = function() {
   return(res)
 }
 
-B = 1000
+B = 10
 results_list = replicate(B, simulate_once(), simplify = FALSE)
 
 # Extract naive + corrected tables
@@ -187,7 +187,7 @@ simulate_once <- function() {
 }
 
 ## ---- Monte Carlo loop ----
-B <- 1000
+B <- 10
 results_list  <- replicate(B, simulate_once(), simplify = FALSE)
 
 ## Extract naive and corrected estimates
@@ -282,7 +282,7 @@ simulate_once <- function() {
 }
 
 ## ---- Monte Carlo loop ----
-B <- 1000
+B <- 10
 results_list <- replicate(B, simulate_once(), simplify = FALSE)
 
 ## ---- Extract naive and corrected estimates
@@ -388,7 +388,7 @@ simulate_once <- function() {
 }
 
 ## ---- Monte Carlo loop ----
-B <- 1000
+B <- 10
 results_list <- replicate(B, simulate_once(), simplify = FALSE)
 
 ## ---- Extract naive and corrected tables

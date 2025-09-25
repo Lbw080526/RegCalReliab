@@ -1,4 +1,4 @@
-#' Regression Calibration for Logistic Regression (Internal Reliability Study)
+#' Regression Calibration (Internal) for Logistic Models via a Formula Interface
 #'
 #' @description
 #' A convenient wrapper that parses a measurement-error formula, prepares data,
@@ -8,21 +8,31 @@
 #'
 #' @param formula A formula or character string like
 #'   "comb ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight".
-#'   Terms of the form `var(rep1, rep2, ...)` are treated as error-prone exposures
-#'   with replicates found in `main_data`. Ordinary terms are treated as covariates W.
+#'   Terms of the form var(rep1, rep2, ...) are treated as error-prone exposures
+#'   with replicates found in main_data. Ordinary terms are treated as covariates W.
 #' @param main_data Data frame holding the outcome, replicate error-prone exposures,
 #'   and any non-error covariates.
+#' @param link Character string specifying the link function for the logistic model
+#'   (default = "logistic").
 #' @param return_details Logical; if TRUE, returns additional internals (xhat, icc, etc.).
 #'
 #' @return A list with two tidy tables:
 #' \itemize{
 #'   \item \code{uncorrected}: naive logistic regression estimates.
-#'   \item \code{corrected}: sandwich-corrected RC estimates.
+#'   \item \code{corrected}: sandwich-corrected RC estimates (your final results).
 #' }
 #' If \code{return_details = TRUE}, also returns intermediate objects.
 #'
+#' @examples
+#' RC_IN_Logistic(
+#'   formula = comb ~ sbp(sbp2, sbp3) + chol(chol2, chol3) + age + weight,
+#'   main_data = main,
+#'   link = "logistic"
+#' )
+#'
 #' @noRd
 #' @export
+
 RC_IN_Logistic <- function(formula,
                            main_data,
                            link = "logistic",

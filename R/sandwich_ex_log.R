@@ -1,29 +1,93 @@
 #' Sandwich Variance Estimator for External Logistic Regression Calibration
 #'
-#' This function applies a sandwich variance estimator for the logistic regression calibration with external data.
+#' \code{sandwich_estimator_ex_log()} computes robust (sandwich) standard errors
+#' for regression calibration in logistic regression using external reliability data.
+#' It propagates uncertainty from estimating the calibration (variance components)
+#' into the final coefficient variances, yielding valid confidence intervals and
+#' p-values even when measurement error is present.
 #'
-#' @param xhat Calibrated exposures.
-#' @param z.main.std Standardized main-study data.
-#' @param z.rep.std Standardized reliability-study data.
-#' @param r Integer vector of replicate counts for reliability-study subjects.
-#' @param Y Binary outcome vector for the main-study subjects.
-#' @param indicator Indicator vector for main-study and reliability-study subjects.
-#' @param v12star Variance-covariance matrix used in the regression calibration.
-#' @param beta.fit2 Calibrated logistic regression coefficients.
-#' @param W.main.std Standardized covariates for the main study (optional).
-#' @param sigma Variance-covariance matrix for the exposures.
-#' @param sigmaz Variance-covariance matrix for the reliability study data.
-#' @param sigmawithin Variance-covariance matrix for within-person variability.
-#' @param sdz Standard deviations used to standardize z.main.
-#' @param sdw Standard deviations used to standardize W.main.
-#' @param muz Mean(s) of exposures used for standardization.
-#' @param muw Optional mean(s) of covariates used for standardization.
-#' @param fit2 The logistic regression model fitted with the calibrated exposures.
+#' @param xhat Numeric matrix of calibrated exposures (\eqn{n_m \times t}),
+#'   typically from \code{\link{reg_calibration_ex_log}}.
+#' @param z.main.std Numeric matrix of standardized main-study exposures
+#'   (\eqn{n_m \times t}).
+#' @param z.rep.std Named list of standardized replicate measurements from the
+#'   reliability study. Each list element is a matrix of dimension
+#'   \eqn{n_r \times r_i}.
+#' @param r Integer vector of replicate counts for reliability-study subjects
+#'   (length \eqn{n_m + n_r}), with 1 for main-study subjects.
+#' @param Y Binary (0/1) outcome vector of length \eqn{n_m}.
+#' @param indicator Binary vector of length \eqn{n_m + n_r} indicating main-study
+#'   (1) vs. reliability-study (0) subjects.
+#' @param v12star Calibration matrix (\eqn{\Sigma_X \Sigma_Z^{-1}\Sigma_{XZ}})
+#'   used to transform observed measurements to their calibrated values.
+#' @param beta.fit2 Numeric vector of logistic regression coefficients from the
+#'   calibrated model (\code{fit2}).
+#' @param W.main.std Optional numeric matrix of standardized error-free
+#'   covariates (\eqn{n_m \times q}).
+#' @param sigma Within-person variance-covariance matrix of the exposures.
+#' @param sigmaz Total variance-covariance matrix of the observed exposures
+#'   (and covariates, if applicable).
+#' @param sigmawithin Estimated within-person covariance matrix (same dimension
+#'   as \code{sigmaz}).
+#' @param sdz Numeric vector of standard deviations of the unstandardized exposures.
+#' @param sdw Optional numeric vector of standard deviations of the unstandardized covariates.
+#' @param muz Numeric vector of means of the unstandardized exposures.
+#' @param muw Optional numeric vector of means of the unstandardized covariates.
+#' @param fit2 The \code{glm} object returned by \code{reg_calibration_ex_log()}.
+#' @param zbar Matrix of subject-level means of replicate measurements
+#'   in the reliability study.
 #'
-#' @return A list containing the sandwich-corrected estimates.
+#' @return A list with one component:
+#' \describe{
+#'   \item{\code{Sandwich Corrected estimates}}{Matrix of regression calibration
+#'         estimates with sandwich-corrected standard errors, z-values,
+#'         p-values, odds ratios, and 95\% confidence intervals on the
+#'         original scale.}
+#' }
+#'
+#' @details
+#' This function implements the three-block estimating equation described in
+#' Carroll et al. (2006) and White (1980):
+#' \enumerate{
+#'   \item \strong{Variance components}: estimates total and within-person covariance.
+#'   \item \strong{Calibration}: computes \eqn{X^\text{hat}} using the
+#'         estimated variance components.
+#'   \item \strong{Outcome model}: fits a logistic regression and applies a
+#'         sandwich (robust) variance formula to combine the uncertainty from
+#'         all stages.
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' # Simulate main-study data
+#' z.main <- matrix(rnorm(60), ncol = 1)
+#' colnames(z.main) <- "sbp"
+#' Y <- rbinom(60, 1, plogis(0.3 * z.main))
+#'
+#' # Simulate external reliability data (30 subjects, 2 replicates)
+#' z.rep <- list(sbp = matrix(rnorm(30 * 2), nrow = 30))
+#' zbar <- sapply(z.rep, rowMeans)
+#'
+#' # Prepare standardization inputs
+#' sdz <- apply(z.main, 2, sd)
+#' z.main.std <- scale(z.main)
+#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#' r <- c(rep(1, 60), rep(2, 30))
+#' indicator <- c(rep(1, 60), rep(0, 30))
+#'
+#' # (In practice, run reg_calibration_ex_log() first to get xhat, fit2, etc.)
+#' # Here we show a simplified call using mock objects:
+#' # sandwich_estimator_ex_log(xhat, z.main.std, z.rep.std, r, Y, indicator,
+#' #   v12star, beta.fit2, sigma, sigmaz, sigmawithin, sdz, NULL, muz, NULL, fit2, zbar)
+#'
+#' @references
+#' Carroll RJ, Ruppert D, Stefanski LA, Crainiceanu CM. \emph{Measurement Error
+#' in Nonlinear Models: A Modern Perspective}. Chapman & Hall/CRC, 2006.
+#' White H. A heteroskedasticity-consistent covariance matrix estimator and a
+#' direct test for heteroskedasticity. \emph{Econometrica}. 1980;48(4):817–838.
+#'
 #' @noRd
 #' @export
-#'
 
 
 
