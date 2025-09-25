@@ -1,18 +1,32 @@
 Package: RegCalReliab
 Type: Package
-Title: RegCalReliab
-Version: 0.0.0.2
-Authors@R: person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", role = c("aut", "cre"))
-Description: User friendly R package realizing Carroll's method.
-License: MIT
+Title: Regression Calibration with Reliability Studies
+Version: 0.1.0
+Authors@R: c(
+    person("Yu", "Lu", role = c("aut", "cph")),
+    person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", role = c("aut", "cre", "cph")),
+    person("Molin", "Wang", role = c("aut", "cph"))
+    )
+Description: Implements regression calibration methods for correcting 
+    measurement error in regression models using external or internal 
+    reliability studies. The package supports continuous, binary, and 
+    count outcomes through linear, logistic, and log-linear regression. 
+    Sandwich variance estimation is provided to ensure valid inference 
+    while accounting for the additional uncertainty from calibration. 
+    Tools for formula parsing, calibration modeling, and simulation 
+    studies are included to facilitate reproducible analysis in 
+    epidemiologic and biomedical research.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
     stats,
     sandwich
 RoxygenNote: 7.3.2
-Suggests: 
+Suggests:
+    mgcv,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-URL: https://lbw080526.github.io/RegCalReliab/
+URL: https://github.com/lbw080526/RegCalReliab
+BugReports: https://github.com/lbw080526/RegCalReliab/issues
