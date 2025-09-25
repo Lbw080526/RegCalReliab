@@ -12,6 +12,11 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+if (!requireNamespace("mgcv", quietly = TRUE)) {
+  stop("Package 'mgcv' is required to run this vignette. 
+       Please install it with install.packages('mgcv').")
+}
 ```
 
 ## Introduction
@@ -24,12 +29,6 @@ This document demonstrates the use of **RegCalReliab** through simulation studie
 library(RegCalReliab)
 ```
 
-```{r setup, include=FALSE}
-if (!requireNamespace("mgcv", quietly = TRUE)) {
-  stop("Package 'mgcv' is required to run this vignette. 
-       Please install it with install.packages('mgcv').")
-}
-```
 
 
 ## Data Simulation for External
