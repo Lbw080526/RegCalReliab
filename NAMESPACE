@@ -2,3 +2,12 @@
 
 export(RC_ExReliab)
 export(RC_InReliab)
+importFrom(stats,binomial)
+importFrom(stats,gaussian)
+importFrom(stats,glm)
+importFrom(stats,lm)
+importFrom(stats,na.omit)
+importFrom(stats,pnorm)
+importFrom(stats,poisson)
+importFrom(stats,sd)
+importFrom(stats,vcov)
