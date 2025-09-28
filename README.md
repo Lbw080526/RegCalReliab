@@ -23,6 +23,11 @@ install_github("Lbw080526/RegCalReliab")
 # install.packages("RegCalReliab")
 ```
 
+You can also get the official release version from CRAN:
+``` r
+install.packages("RegCalReliab")
+```
+
 ## Documentation and Examples
 
 For detailed examples and usage of the RegCalReliab package, please refer to
