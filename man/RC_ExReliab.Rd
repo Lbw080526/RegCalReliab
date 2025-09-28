@@ -51,7 +51,8 @@ z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
 z_rep <- rbind(
   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
-  cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+  cbind(add_err(x[2401:3000]), add_err(x[2401:3000]),
+        add_err(x[2401:3000]), add_err(x[2401:3000]))
 )
 colnames(z_rep) <- paste0("z_", 1:4)
 Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * x[1:1500]))
@@ -68,7 +69,8 @@ z.main <- x[1:1500] + rnorm(1500, 0, sqrt(0.4))
 z_rep <- rbind(
   cbind(add_err(x[1501:2000]), add_err(x[1501:2000]), NA, NA),
   cbind(add_err(x[2001:2400]), add_err(x[2001:2400]), add_err(x[2001:2400]), NA),
-  cbind(add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]), add_err(x[2401:3000]))
+  cbind(add_err(x[2401:3000]), add_err(x[2401:3000]),
+        add_err(x[2401:3000]), add_err(x[2401:3000]))
 )
 colnames(z_rep) <- paste0("z_", 1:4)
 Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * x[1:1500] + 0.5 * W_main))
@@ -84,13 +86,15 @@ colnames(z.main) <- c("z1", "z2")
 z1_rep <- rbind(
   cbind(add_err(x[1501:2000, 1]), add_err(x[1501:2000, 1]), NA, NA),
   cbind(add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), add_err(x[2001:2400, 1]), NA),
-  cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
+  cbind(add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]),
+        add_err(x[2401:3000, 1]), add_err(x[2401:3000, 1]))
 )
 colnames(z1_rep) <- paste0("z1_", 1:4)
 z2_rep <- rbind(
   cbind(add_err(x[1501:2000, 2]), add_err(x[1501:2000, 2]), NA, NA),
   cbind(add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), add_err(x[2001:2400, 2]), NA),
-  cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
+  cbind(add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]),
+        add_err(x[2401:3000, 2]), add_err(x[2401:3000, 2]))
 )
 colnames(z2_rep) <- paste0("z2_", 1:4)
 Y <- rbinom(1500, 1, plogis(-2.3 + log(1.5) * rowSums(x[1:1500, ])))
