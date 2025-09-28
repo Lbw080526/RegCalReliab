@@ -1,22 +1,19 @@
 Package: RegCalReliab
 Type: Package
-Title: Regression Calibration with Reliability Studies
+Title: Regression Calibration Using Reliability Studies
 Version: 0.1.0
 Authors@R: c(
-    person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", role = c("aut", "cre")),
+    person("Bowen", "Liu", email = "bowenliu@hsph.harvard.edu", 
+           role = c("aut", "cre", "cph")),
     person("Yu", "Lu", role = "aut"),
     person("Molin", "Wang", role = "aut")
   )
 Maintainer: Bowen Liu <bowenliu@hsph.harvard.edu>
 Description: Implements regression calibration methods for correcting 
     measurement error in regression models using external or internal 
-    reliability studies. The package supports continuous, binary, and 
-    count outcomes through linear, logistic, and log-linear regression. 
-    Sandwich variance estimation is provided to ensure valid inference 
-    while accounting for the additional uncertainty from calibration. 
-    Tools for formula parsing, calibration modeling, and simulation 
-    studies are included to facilitate reproducible analysis in 
-    epidemiologic and biomedical research.
+    reliability studies. Methods are described in Carroll, Ruppert, 
+    Stefanski, and Crainiceanu (2006) "Measurement Error in Nonlinear 
+    Models: A Modern Perspective" <doi:10.1201/9781420010138>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
