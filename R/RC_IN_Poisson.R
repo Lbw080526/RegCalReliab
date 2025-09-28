@@ -31,7 +31,6 @@
 #' )
 #'
 #' @noRd
-#' @export
 
 RC_IN_Poisson <- function(formula,
                           main_data,

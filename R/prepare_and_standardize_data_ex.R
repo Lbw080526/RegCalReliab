@@ -77,7 +77,6 @@
 #' str(prep)
 #'
 #' @noRd
-#' @export
 
 
 prepare_data_ex <- function(z.main, r, z.rep, W = NULL, Y) {

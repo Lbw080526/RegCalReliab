@@ -91,7 +91,6 @@
 #' str(fit)
 #'
 #' @noRd
-#' @export
 
 
 

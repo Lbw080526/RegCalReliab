@@ -95,7 +95,6 @@
 #' str(fit)
 #'
 #' @noRd
-#' @export
 
 
 reg_calibration_ex_poisson = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y, muz, muw, sdz, sdw, indicator) {

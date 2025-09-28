@@ -56,7 +56,6 @@
 #' str(res)
 #'
 #' @noRd
-#' @export
 
 naive_analysis_ex_log = function(z.main.std, W.main.std = NULL, Y, sdz, sdw) {
 

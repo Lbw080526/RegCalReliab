@@ -55,7 +55,6 @@
 #' str(res)
 #'
 #' @noRd
-#' @export
 
 
 

@@ -84,8 +84,6 @@
 #' direct test for heteroskedasticity. \emph{Econometrica}. 1980;48(4):817–838.
 #'
 #' @noRd
-#' @export
-
 
 sandwich_estimator_ex_linear <- function(
     xhat, z.main.std, z.rep.std, r, Y, indicator, v12star, beta.fit2,

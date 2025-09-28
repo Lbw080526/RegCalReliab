@@ -29,7 +29,6 @@
 #' )
 #'
 #' @noRd
-#' @export
 
 RC_EX_Poisson <- function(formula,
                           main_data,

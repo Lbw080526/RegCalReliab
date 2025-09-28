@@ -93,7 +93,6 @@
 #' str(fit)
 #'
 #' @noRd
-#' @export
 
 
 reg_calibration_in_log = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz, sdw ,r, var1){

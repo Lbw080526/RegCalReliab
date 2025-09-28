@@ -28,7 +28,6 @@
 #'   main_data = main, rep_data = ers, family = binomial("logit")
 #' )
 #' @noRd
-#' @export
 
 RC_EX_logistic = function(formula,
                            main_data,

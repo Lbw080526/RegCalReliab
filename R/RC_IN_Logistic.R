@@ -31,7 +31,6 @@
 #' )
 #'
 #' @noRd
-#' @export
 
 RC_IN_Logistic <- function(formula,
                            main_data,

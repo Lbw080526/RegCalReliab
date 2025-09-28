@@ -80,7 +80,6 @@
 #' direct test for heteroskedasticity. \emph{Econometrica}. 1980;48(4):817–838.
 #'
 #' @noRd
-#' @export
 
 
 

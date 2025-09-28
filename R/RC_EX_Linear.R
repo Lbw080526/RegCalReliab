@@ -29,7 +29,6 @@
 #'   main_data = main, rep_data = ers, family = gaussian("identity")
 #' )
 #' @noRd
-#' @export
 
 RC_EX_Linear <- function(formula,
                          main_data,
