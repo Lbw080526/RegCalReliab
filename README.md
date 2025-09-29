@@ -10,7 +10,7 @@ website](https://img.shields.io/badge/docs-pkgdown-blue)](https://github.com/Lbw
 
 RegCalReliab is an R package for performing regression calibration in regression models with covariate measurement error, using data from external or internal reliability studies.
 
-- **Authors**: [Yu Lu; Molin Wang, Bowen Liu]
+- **Authors**: [Yu Lu, Bowen Liu, Molin Wang]
 - **Version**: 0.1.0
 
 ## Installation
