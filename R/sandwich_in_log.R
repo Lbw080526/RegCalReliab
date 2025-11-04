@@ -57,15 +57,15 @@
 #' @examples
 #' set.seed(123)
 #' # Simulate internal replicate data: 50 subjects, 2 replicates of 1 exposure
-#' z.rep <- cbind(rnorm(50), rnorm(50))
-#' zbar <- rowMeans(z.rep)
-#' Y <- rbinom(50, 1, plogis(0.5 * zbar))
+#' z.rep = cbind(rnorm(50), rnorm(50))
+#' zbar = rowMeans(z.rep)
+#' Y = rbinom(50, 1, plogis(0.5 * zbar))
 #'
 #' # Standardize
-#' zbar.std <- scale(zbar)
-#' sdz <- sd(zbar)
-#' z.std <- list(sbp = scale(z.rep))
-#' r <- rep(2, 50)
+#' zbar.std = scale(zbar)
+#' sdz = sd(zbar)
+#' z.std = list(sbp = scale(z.rep))
+#' r = rep(2, 50)
 #'
 #' # (In practice, run reg_calibration_in_log() first to obtain xhat, fit2, etc.)
 #' # Here we show a simplified call with mock objects:
@@ -88,19 +88,17 @@
 sandwich_estimator_in_log = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std = NULL,sigma,
                                      sigmawithin,sigmazstar,sigmazhat, sdz,sdw,muz,muw,fit2,v){
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  # Basic dimensions
   n = length(r)
   t = length(z.std)
   q = ncol(W.std)
 
-  muz_std <- colMeans(zbar, na.rm = TRUE)  # length t
+  muz_std = colMeans(zbar, na.rm = TRUE)  # length t
 
   if (!is.null(W.std)) {
-    muw_std <- colMeans(W.std, na.rm = TRUE)  # length q
+    muw_std = colMeans(W.std, na.rm = TRUE)  # length q
   } else {
-    muw_std <- NULL
+    muw_std = NULL
   }
 
 
@@ -258,7 +256,7 @@ sandwich_estimator_in_log = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std
                                                               v12star%*%solve(matrix(sigmazhat[,y],ncol=t+q))%*%ddm.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t+q)))%*%Z[,y])),simplify = F)
 
     ###off-diag
-    if(t>1){odv.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+    if(t>1){odv.x=sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
       c[x,y] = c[x,y]+1
       c[y,x] = c[y,x]+1
       c
@@ -301,7 +299,7 @@ sandwich_estimator_in_log = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std
       t(sapply(1:n,function(u) t((-v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%ddm.w[[x]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u]))),simplify = F)
 
     ###off-diag
-    if(q>1){odm.w<-sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
+    if(q>1){odm.w=sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
       m[x,y] = m[x,y]+1
       m[y,x] = m[y,x]+1
       m

@@ -60,7 +60,7 @@
 #' \dontrun{
 #' # Assuming xhat, z.main.std, z.rep.std, etc. are prepared as in
 #' # reg_calibration_ex_poisson():
-#' fit_sand <- sandwich_estimator_ex_poisson(
+#' fit_sand = sandwich_estimator_ex_poisson(
 #'   xhat = xhat,
 #'   z.main.std = z.main.std,
 #'   z.rep.std = z.rep.std,
@@ -92,16 +92,14 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
 
 
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  # Basic dimensions
   nm = nrow(z.main.std) # number of subjects in the main study
   nr = sum(indicator == 0)
   n = nm+nr # total number of subjects (main + reliability)
   t = ncol(z.main.std) # number of variables in z.main.std
 
-  muz_std <- as.numeric(colMeans(z.main.std))            # length t
-  if (!is.null(W.main.std)) muw_std <- as.numeric(colMeans(W.main.std))  # length q
+  muz_std = as.numeric(colMeans(z.main.std))            # length t
+  if (!is.null(W.main.std)) muw_std = as.numeric(colMeans(W.main.std))  # length q
 
 
   if(is.null(W.main.std)){
@@ -145,19 +143,19 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     # For each x from 1 to t-1, for each y from x+1 to t, update matrix c
 
     if(t>1){
-      odv.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
-        c[x,y]<-c[x,y]+1
-        c[y,x]<-c[y,x]+1
+      odv.x=sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+        c[x,y]=c[x,y]+1
+        c[y,x]=c[y,x]+1
         c
       },simplify = FALSE),simplify = FALSE)
-      odm.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
-        m[x,y]<-m[x,y]+1
-        m[y,x]<-m[y,x]+1
+      odm.x=sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+        m[x,y]=m[x,y]+1
+        m[y,x]=m[y,x]+1
         m
       },simplify = FALSE),simplify = F)
 
       # Compute the off-diagonal derivative contributions
-      ob.x<-sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      ob.x=sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
         t((odv.x[[x]][[y]]%*%sigmaz.inv-
              v12star%*%sigmaz.inv%*%odm.x[[x]][[y]]%*%sigmaz.inv)%*%Z),simplify = FALSE),simplify = FALSE)
     }
@@ -215,13 +213,13 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     ###diag
     dmgi = sapply(1:t, function(x) (Z[x,] - muz_std[x]) / nm)
 
-    #dgi<-sapply(1:(t),function(x) (((Z[x,]-mu[x])^2-diag(sigmaz)[x]))/nm)
+    #dgi=sapply(1:(t),function(x) (((Z[x,]-mu[x])^2-diag(sigmaz)[x]))/nm)
 
     dgi = t(((Z - muz_std)^2 - diag(sigmaz)) / nm)
 
     ###off-diag
     if (t > 1) {
-      ogi <- sapply(1:(t-1), function(x) sapply((x+1):t, function(y)
+      ogi = sapply(1:(t-1), function(x) sapply((x+1):t, function(y)
         ((Z[x,] - muz_std[x]) * (Z[y,] - muz_std[y]) - sigmaz[x,y]) / nm))
     }
 
@@ -230,12 +228,12 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     zbar = sapply(z.rep.std,function(y) rowMeans(y,na.rm = T))
     r0 = r[indicator==0]
 
-    dgi.0<-if(t==1){
+    dgi.0=if(t==1){
       sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-sigma*(r0-1))/sum(r0-1))
     }else sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-diag(sigma)[y]*(r0-1))/sum(r0-1))
 
     ###off-diag
-    if(t>1){ogi.0<-sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
+    if(t>1){ogi.0=sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
       (rowSums((z.rep.std[[x]]-zbar[,x])*(z.rep.std[[y]]-zbar[,y]),na.rm = T)-sigma[x,y]*(r0-1))/sum(r0-1)))
     }
 
@@ -323,7 +321,7 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     # T matrix for diagonal elements
     ddm.x = sapply(1:t,function(x){
       a = rep(0,t+q)
-      a[x]<-a[x]+1
+      a[x]=a[x]+1
       diag(a)
     },simplify = FALSE)
 
@@ -353,13 +351,13 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
     ##all off-diag
     # S for the cross block
     odv.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
-      c[x,y]<-c[x,y]+1
+      c[x,y]=c[x,y]+1
       c
     },simplify = FALSE),simplify = FALSE)
     # T
     odm.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
-      m[x,y]<-m[x,y]+1
-      m[y,x]<-m[y,x]+1
+      m[x,y]=m[x,y]+1
+      m[y,x]=m[y,x]+1
       m
     },simplify = FALSE),simplify = FALSE)
 
@@ -382,8 +380,8 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
 
     ###off-diag
     if(q>1){odm.w = sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
-      m[x,y]<-m[x,y]+1
-      m[y,x]<-m[y,x]+1
+      m[x,y]=m[x,y]+1
+      m[y,x]=m[y,x]+1
       m
     },simplify = FALSE),simplify = FALSE)
 
@@ -394,7 +392,7 @@ sandwich_estimator_ex_poisson = function(xhat,z.main.std,z.rep.std,r,Y,indicator
 
     ##sigma within-person sigma
     ###diag
-    db.0<-sapply(1:t,function(x) t((-ddv.x[[x]]%*%sigmaz.inv)%*%Z),simplify = FALSE)
+    db.0=sapply(1:t,function(x) t((-ddv.x[[x]]%*%sigmaz.inv)%*%Z),simplify = FALSE)
 
     ###off-diag
     if(t>1){ob.0 = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)

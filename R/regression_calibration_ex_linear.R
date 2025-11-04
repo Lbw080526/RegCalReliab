@@ -58,22 +58,22 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated main-study data: 80 subjects, 1 exposure
-#' z <- matrix(rnorm(80), ncol = 1)
-#' colnames(z) <- "sbp"
-#' Y <- 2 + 0.5 * z + rnorm(80)
+#' z = matrix(rnorm(80), ncol = 1)
+#' colnames(z) = "sbp"
+#' Y = 2 + 0.5 * z + rnorm(80)
 #'
 #' # Reliability study: 40 subjects, 2 replicates
-#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
-#' r <- c(rep(1, 80), rep(2, 40))
-#' indicator <- c(rep(1, 80), rep(0, 40))
+#' z.rep = list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' r = c(rep(1, 80), rep(2, 40))
+#' indicator = c(rep(1, 80), rep(0, 40))
 #'
 #' # Standardize data
-#' sdz <- apply(z, 2, sd)
-#' z.main.std <- scale(z)
-#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#' sdz = apply(z, 2, sd)
+#' z.main.std = scale(z)
+#' z.rep.std = list(sbp = scale(z.rep$sbp))
 #'
 #' # Run regression calibration
-#' fit <- reg_calibration_ex_linear(
+#' fit = reg_calibration_ex_linear(
 #'   z.main.std = z.main.std,
 #'   z.rep.std  = z.rep.std,
 #'   r          = r,
@@ -94,18 +94,14 @@
 
 reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y, muz, muw, sdz, sdw, indicator) {
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  # Basic dimensions
   nm = nrow(z.main.std) # number of subjects in the main study
   nr = sum(indicator == 0) # number of subjects in the reliability study
   n = nm+nr # total number of subjects (main + reliability)
   t = ncol(z.main.std) # number of variables in z.main.std
 
 
-  # -----------------------------------------------
-  # 1) CASE 1:  W.std == NULL
-  # -----------------------------------------------
+  # W.std == NULL
   if (is.null(W.main.std)) {
 
     # Compute means for each subject from the reliability study (with replicates).
@@ -143,7 +139,7 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
       xhat = t(apply(cbind(z.main.std),1,function(t) (v12star%*%solve(sigmaz)%*%t)))
     }
 
-    if (is.null(dim(xhat))) xhat <- matrix(xhat, ncol = t)
+    if (is.null(dim(xhat))) xhat = matrix(xhat, ncol = t)
 
     colnames(xhat) = colnames(z.main.std)
 
@@ -152,7 +148,7 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
     sigmawithin = sigma
     icc = sigmax%*%solve(sigmaz)
 
-    # -----  Fit Corrected Outcome Model -----
+    # Fit Corrected Outcome Model
     # Turn calibrated exposures into a data frame with correct names
     xhat_df = as.data.frame(xhat)
     colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
@@ -185,10 +181,7 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
 
 
   else {
-    # -----------------------------------------------
-    # 2) CASE 2:  W.std != NULL
-    # -----------------------------------------------
-
+    #W.std != NULL
     #restricted to the reliability subset
     nm = sum(indicator)
     nr = n-nm
@@ -227,18 +220,18 @@ reg_calibration_ex_linear = function(z.main.std, z.rep.std, r, W.main.std = NULL
       xhat = t(apply(cbind(z.main.std, W.main.std),1,function(t) (v12star%*%solve(sigmaz)%*%t)))
     }
 
-    if (is.null(dim(xhat))) xhat <- matrix(xhat, ncol = t)  # <<< FIX
+    if (is.null(dim(xhat))) xhat = matrix(xhat, ncol = t)  # <<< FIX
     colnames(xhat) = colnames(z.main.std)
     colnames(W.main.std) = colnames(W.main.std)
 
-    # -----  Fit Corrected Outcome Model -----
+    # Fit Corrected Outcome Model
 
-    xhat_df <- as.data.frame(xhat)
-    W_df <- as.data.frame(W.main.std)
-    colnames(xhat_df) <- colnames(z.main.std)   # e.g. "sbp", "chol"
-    colnames(W_df) <- colnames(W.main.std)
-    model_df <- data.frame(Y = Y, xhat_df, W_df)
-    fit2 <- lm(Y ~ ., data = model_df)
+    xhat_df = as.data.frame(xhat)
+    W_df = as.data.frame(W.main.std)
+    colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
+    colnames(W_df) = colnames(W.main.std)
+    model_df = data.frame(Y = Y, xhat_df, W_df)
+    fit2 = lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
 
     # A "sandwich" variance that partially adjusts for regression aspects but not fully for the measurement model

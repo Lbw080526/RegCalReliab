@@ -60,20 +60,20 @@
 #' @examples
 #' set.seed(123)
 #' # Simulate main-study data
-#' z.main <- matrix(rnorm(60), ncol = 1)
-#' colnames(z.main) <- "sbp"
-#' Y <- rbinom(60, 1, plogis(0.3 * z.main))
+#' z.main = matrix(rnorm(60), ncol = 1)
+#' colnames(z.main) = "sbp"
+#' Y = rbinom(60, 1, plogis(0.3 * z.main))
 #'
 #' # Simulate external reliability data (30 subjects, 2 replicates)
-#' z.rep <- list(sbp = matrix(rnorm(30 * 2), nrow = 30))
-#' zbar <- sapply(z.rep, rowMeans)
+#' z.rep = list(sbp = matrix(rnorm(30 * 2), nrow = 30))
+#' zbar = sapply(z.rep, rowMeans)
 #'
 #' # Prepare standardization inputs
-#' sdz <- apply(z.main, 2, sd)
-#' z.main.std <- scale(z.main)
-#' z.rep.std <- list(sbp = scale(z.rep$sbp))
-#' r <- c(rep(1, 60), rep(2, 30))
-#' indicator <- c(rep(1, 60), rep(0, 30))
+#' sdz = apply(z.main, 2, sd)
+#' z.main.std = scale(z.main)
+#' z.rep.std = list(sbp = scale(z.rep$sbp))
+#' r = c(rep(1, 60), rep(2, 30))
+#' indicator = c(rep(1, 60), rep(0, 30))
 #'
 #' # (In practice, run reg_calibration_ex_log() first to get xhat, fit2, etc.)
 #' # Here we show a simplified call using mock objects:
@@ -104,8 +104,8 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
   n = nm+nr # total number of subjects (main + reliability)
   t = ncol(z.main.std) # number of variables in z.main.std
   r0 = r[indicator==0]
-  muz_std <- as.numeric(colMeans(z.main.std))            # length t
-  if (!is.null(W.main.std)) muw_std <- as.numeric(colMeans(W.main.std))  # length q
+  muz_std = as.numeric(colMeans(z.main.std))            # length t
+  if (!is.null(W.main.std)) muw_std = as.numeric(colMeans(W.main.std))  # length q
 
 
   if(is.null(W.main.std)){
@@ -153,19 +153,19 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     # For each x from 1 to t-1, for each y from x+1 to t, update matrix c
 
     if(t>1){
-      odv.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
-        c[x,y]<-c[x,y]+1
-        c[y,x]<-c[y,x]+1
+      odv.x = sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+        c[x,y]=c[x,y]+1
+        c[y,x]=c[y,x]+1
         c
       },simplify = FALSE),simplify = FALSE)
-      odm.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
-        m[x,y]<-m[x,y]+1
-        m[y,x]<-m[y,x]+1
+      odm.x = sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+        m[x,y]=m[x,y]+1
+        m[y,x]=m[y,x]+1
         m
       },simplify = FALSE),simplify = F)
 
       # Compute the off-diagonal derivative contributions
-      ob.x<-sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
+      ob.x = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
         t((odv.x[[x]][[y]]%*%sigmaz.inv-
              v12star%*%sigmaz.inv%*%odm.x[[x]][[y]]%*%sigmaz.inv)%*%Z),simplify = FALSE),simplify = FALSE)
     }
@@ -226,23 +226,23 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     ###sigmas
 
     ###diag
-    dmgi <- sapply(1:t, function(x) (Z[x,] - muz_std[x]) / nm)
+    dmgi = sapply(1:t, function(x) (Z[x,] - muz_std[x]) / nm)
 
-    dgi  <- t(((Z - muz_std)^2 - diag(sigmaz)) / nm)
+    dgi = t(((Z - muz_std)^2 - diag(sigmaz)) / nm)
 
     ###off-diag
     if (t > 1) {
-      ogi <- sapply(1:(t-1), function(x) sapply((x+1):t, function(y)
+      ogi = sapply(1:(t-1), function(x) sapply((x+1):t, function(y)
         ((Z[x,] - muz_std[x]) * (Z[y,] - muz_std[y]) - sigmaz[x,y]) / nm))
     }
 
     ###within variance
     ###diag
-    dgi.0<-if(t==1){
+    dgi.0 = if(t==1){
       sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-sigma*(r0-1))/sum(r0-1))
     }else sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-diag(sigma)[y]*(r0-1))/sum(r0-1))
     ###off-diag
-    if(t>1){ogi.0<-sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
+    if(t>1){ogi.0 = sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
       (rowSums((z.rep.std[[x]]-zbar[,x])*(z.rep.std[[y]]-zbar[,y]),na.rm = T)-sigma[x,y]*(r0-1))/sum(r0-1)))
     }
 
@@ -331,7 +331,7 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     # T matrix for diagonal elements
     ddm.x = sapply(1:t,function(x){
       a = rep(0,t+q)
-      a[x]<-a[x]+1
+      a[x] = a[x]+1
       diag(a)
     },simplify = FALSE)
 
@@ -363,13 +363,13 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
     ##all off-diag
     # S for the cross block
     odv.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
-      c[x,y]<-c[x,y]+1
+      c[x,y]=c[x,y]+1
       c
     },simplify = FALSE),simplify = FALSE)
     # T
     odm.xw = sapply(1:t,function(x) sapply(max((x+1),t+1):(t+q),function(y){
-      m[x,y]<-m[x,y]+1
-      m[y,x]<-m[y,x]+1
+      m[x,y]=m[x,y]+1
+      m[y,x]=m[y,x]+1
       m
     },simplify = FALSE),simplify = FALSE)
 
@@ -393,18 +393,18 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
 
 
     ###off-diag
-    if(q>1){odm.w<-sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
-      m[x,y]<-m[x,y]+1
-      m[y,x]<-m[y,x]+1
+    if(q>1){odm.w = sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
+      m[x,y]=m[x,y]+1
+      m[y,x]=m[y,x]+1
       m
     },simplify = F),simplify = F)
-    ob.w<-sapply(1:(q-1),function(x) sapply(1:(q-x),function(y)
+    ob.w=sapply(1:(q-1),function(x) sapply(1:(q-x),function(y)
       t((-v12star%*%sigmaz.inv%*%odm.w[[x]][[y]]%*%sigmaz.inv)%*%Z),simplify = F),simplify = F)
     }
 
     ##sigma within-person sigma
     ###diag
-    db.0<-sapply(1:t,function(x) t((-ddv.x[[x]]%*%sigmaz.inv)%*%Z),simplify = FALSE)
+    db.0 = sapply(1:t,function(x) t((-ddv.x[[x]]%*%sigmaz.inv)%*%Z),simplify = FALSE)
 
     ###off-diag
     if(t>1){ob.0 = sapply(1:(t-1),function(x) sapply(1:(t-x),function(y)
@@ -457,18 +457,18 @@ sandwich_estimator_ex_log = function(xhat,z.main.std,z.rep.std,r,Y,indicator, v1
 
     ###sigmas
     ###diag
-    dgi  <- t(((Z - mu)^2 - diag(sigmaz)) / nm)
+    dgi  = t(((Z - mu)^2 - diag(sigmaz)) / nm)
     ogi = sapply(1:(t+q-1),function(x) sapply((x+1):(t+q), function(y) # thrid line of g(u)
       ((Z[x,]-mu[x])*(Z[y,]-mu[y])-sigmaz[x,y])/nm))
 
     ###within variance
     ###diag
-    dgi.0<-if(t==1){
+    dgi.0=if(t==1){
       sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-sigma*(r0-1))/sum(r0-1))
     }else sapply(1:t,function(y) (rowSums((z.rep.std[[y]]-zbar[,y])^2,na.rm = T)-diag(sigma)[y]*(r0-1))/sum(r0-1))
 
     ###off-diag
-    if(t>1){ogi.0<-sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
+    if(t>1){ogi.0=sapply(1:(t-1),function(x) sapply((x+1):t, function(y)
       (rowSums((z.rep.std[[x]]-zbar[,x])*(z.rep.std[[y]]-zbar[,y]),na.rm = T)-sigma[x,y]*(r0-1))/sum(r0-1)))
     }
 

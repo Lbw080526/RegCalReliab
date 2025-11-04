@@ -37,16 +37,16 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated internal data: 80 subjects, 2 replicates of 1 exposure
-#' z.rep <- cbind(rnorm(80), rnorm(80))
-#' zbar <- rowMeans(z.rep)
-#' Y <- 2 + 0.5 * zbar + rnorm(80)
+#' z.rep = cbind(rnorm(80), rnorm(80))
+#' zbar = rowMeans(z.rep)
+#' Y = 2 + 0.5 * zbar + rnorm(80)
 #'
 #' # Standardize and get SDs
-#' zbar.std <- scale(zbar)
-#' sdz <- sd(zbar)
+#' zbar.std = scale(zbar)
+#' sdz = sd(zbar)
 #'
 #' # Run naive linear regression ignoring measurement error
-#' res <- naive_analysis_in_linear(
+#' res = naive_analysis_in_linear(
 #'   zbar = zbar.std,
 #'   W.std = NULL,
 #'   Y = Y,
@@ -74,7 +74,7 @@ naive_analysis_in_linear = function(Y, zbar, W.std = NULL, sdz, sdw){
   tab1[,1:2] = tab1[,1:2]/c(1,sdz)
   CI.low = tab1[,1]-1.96*tab1[,2]
   CI.high = tab1[,1]+1.96*tab1[,2]
-  tab1[,1:2] <- tab1[,1:2] / c(1, sdz)
+  tab1[,1:2] = tab1[,1:2] / c(1, sdz)
 
   }
 
@@ -89,12 +89,12 @@ naive_analysis_in_linear = function(Y, zbar, W.std = NULL, sdz, sdw){
     tab1[,1:2] = tab1[,1:2]/c(1,sdz,sdw)
     CI.low = tab1[,1]-1.96*tab1[,2]
     CI.high = tab1[,1]+1.96*tab1[,2]
-    tab1[,1:2] <- tab1[,1:2] / c(1, sdz, sdw)
+    tab1[,1:2] = tab1[,1:2] / c(1, sdz, sdw)
   }
 
-  CI.low  <- tab1[,1] - 1.96 * tab1[,2]
-  CI.high <- tab1[,1] + 1.96 * tab1[,2]
-  tab1    <- cbind(tab1, CI.low = CI.low, CI.high = CI.high)
+  CI.low  = tab1[,1] - 1.96 * tab1[,2]
+  CI.high = tab1[,1] + 1.96 * tab1[,2]
+  tab1    = cbind(tab1, CI.low = CI.low, CI.high = CI.high)
 
 
 

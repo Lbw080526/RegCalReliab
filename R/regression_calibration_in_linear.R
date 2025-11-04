@@ -63,22 +63,22 @@
 #' @examples
 #' set.seed(123)
 #' # Internal reliability study: 60 subjects, 2 replicates of 1 exposure
-#' z.rep <- cbind(rnorm(60), rnorm(60))
-#' zbar <- rowMeans(z.rep)
-#' Y <- 2 + 0.5 * zbar + rnorm(60)
+#' z.rep = cbind(rnorm(60), rnorm(60))
+#' zbar = rowMeans(z.rep)
+#' Y = 2 + 0.5 * zbar + rnorm(60)
 #'
 #' # Standardize data
-#' zbar.std <- scale(zbar)
-#' sdz <- sd(zbar)
-#' z.std <- list(sbp = scale(z.rep))
-#' r <- rep(2, 60) # each subject has 2 replicates
+#' zbar.std = scale(zbar)
+#' sdz = sd(zbar)
+#' z.std = list(sbp = scale(z.rep))
+#' r = rep(2, 60) # each subject has 2 replicates
 #'
 #' # Naive covariance (for dimension labels)
-#' naive <- naive_analysis_in_linear(Y = Y, zbar = zbar.std, W.std = NULL,
+#' naive = naive_analysis_in_linear(Y = Y, zbar = zbar.std, W.std = NULL,
 #'                                   sdz = sdz, sdw = NULL)
 #'
 #' # Apply regression calibration
-#' fit <- reg_calibration_in_linear(
+#' fit = reg_calibration_in_linear(
 #'   Y = Y,
 #'   zbar = as.matrix(zbar.std),
 #'   z.std = z.std,
@@ -97,16 +97,11 @@
 
 
 reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz, sdw ,r, var1){
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+
   n = length(r)
   t = length(z.std)
   q = ncol(W.std)
 
-  # -----------------------------------------------
-  # 1) CASE 1:  W.std == NULL
-  # -----------------------------------------------
   if(is.null(W.std)){
 
     v = sum(r)-sum(r^2)/sum(r)
@@ -137,8 +132,8 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
     }
     if(t==1){
       xhat = sapply(1:n,function(i) (v12star%*%solve(matrix(sigmazhat[,i],ncol=t))%*%zbar[i]))
-      xhat <- matrix(xhat, ncol = 1)                 # <- new
-      colnames(xhat) <- colnames(zbar) %||% "z"
+      xhat = matrix(xhat, ncol = 1)                 # = new
+      colnames(xhat) = colnames(zbar) %||% "z"
     }else{
       xhat = t(sapply(1:n,function(i) (v12star%*%solve(matrix(sigmazhat[,i],ncol=t))%*%zbar[i,])))
     }
@@ -180,9 +175,7 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
 
 
   else {
-    # -----------------------------------------------
-    # 2) CASE 2:  W.std != NULL
-    # -----------------------------------------------
+
     v = sum(r)-sum(r^2)/sum(r)
 
     dif = rbind(sapply(1:n, function(x) zbar[x,]),
@@ -214,8 +207,8 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
 
     if(t==1){
       xhat = sapply(1:n,function(i) (v12star%*%solve(matrix(sigmazhat[,i],ncol=t+q))%*%cbind(zbar,W.std)[i,]))
-      xhat <- matrix(xhat, ncol = 1)                 # <- new
-      colnames(xhat) <- colnames(zbar) %||% "z"
+      xhat = matrix(xhat, ncol = 1)                 # = new
+      colnames(xhat) = colnames(zbar) %||% "z"
     }else{
       xhat = t(sapply(1:n,function(i) (v12star%*%solve(matrix(sigmazhat[,i],ncol=t+q))%*%cbind(zbar,W.std)[i,])))
     }
@@ -223,12 +216,12 @@ reg_calibration_in_linear = function(Y, zbar, z.std, W.std = NULL, muz, muw, sdz
     colnames(xhat) = paste0(colnames(zbar))
     colnames(W.std) = colnames(W.std)
 
-    xhat_df <- as.data.frame(xhat)
-    W_df <- as.data.frame(W.std)
-    colnames(xhat_df) <- colnames(xhat)   # e.g. "sbp", "chol"
-    colnames(W_df) <- colnames(W.std)
-    model_df <- data.frame(Y = Y, xhat_df, W_df)
-    fit2 <- lm(Y ~ ., data = model_df)
+    xhat_df = as.data.frame(xhat)
+    W_df = as.data.frame(W.std)
+    colnames(xhat_df) = colnames(xhat)   # e.g. "sbp", "chol"
+    colnames(W_df) = colnames(W.std)
+    model_df = data.frame(Y = Y, xhat_df, W_df)
+    fit2 = lm(Y ~ ., data = model_df)
     beta.fit2 = fit2$coefficients
     var2 = sandwich::sandwich(fit2)
 

@@ -39,13 +39,13 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated main-study data: 100 subjects, 1 exposure
-#' z <- matrix(rnorm(100), ncol = 1)
-#' colnames(z) <- "sbp"
-#' Y <- 2 + 0.5 * z + rnorm(100)
-#' sdz <- apply(z, 2, sd)
+#' z = matrix(rnorm(100), ncol = 1)
+#' colnames(z) = "sbp"
+#' Y = 2 + 0.5 * z + rnorm(100)
+#' sdz = apply(z, 2, sd)
 #'
 #' # Run naive linear regression ignoring measurement error
-#' res <- naive_analysis_ex_linear(
+#' res = naive_analysis_ex_linear(
 #'   z.main.std = scale(z),
 #'   W.main.std = NULL,
 #'   Y = Y,

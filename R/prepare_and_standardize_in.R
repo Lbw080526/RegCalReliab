@@ -44,20 +44,20 @@
 #' @examples
 #' set.seed(123)
 #' # Internal study: 5 subjects, 1 exposure with 2 replicates
-#' z <- list(
+#' z = list(
 #'   sbp = cbind(rnorm(5, 120, 15), rnorm(5, 120, 15))
 #' )
 #'
 #' # Replicate counts (each subject has 2 replicates)
-#' r <- rep(2, 5)
+#' r = rep(2, 5)
 #'
 #' # Outcome and optional covariate
-#' Y <- rbinom(5, 1, 0.5)
-#' W <- matrix(rnorm(5), ncol = 1)
-#' colnames(W) <- "age"
+#' Y = rbinom(5, 1, 0.5)
+#' W = matrix(rnorm(5), ncol = 1)
+#' colnames(W) = "age"
 #'
 #' # Prepare and standardize data
-#' prep <- prepare_data_in(r = r, z = z, W = W, Y = Y)
+#' prep = prepare_data_in(r = r, z = z, W = W, Y = Y)
 #' str(prep)
 #'
 #' @noRd
@@ -74,10 +74,10 @@ prepare_data_in = function(r, z, W = NULL, Y) {
   z_name = names(z)
 
   z = lapply(1:t, function(x) {
-    zx <- z[[x]]
-    pad_cols <- max(r) - ncol(zx)
+    zx = z[[x]]
+    pad_cols = max(r) - ncol(zx)
     if (pad_cols > 0) {
-      zx <- cbind(zx, matrix(NA, nrow = n, ncol = pad_cols))
+      zx = cbind(zx, matrix(NA, nrow = n, ncol = pad_cols))
     }
     zx
   })

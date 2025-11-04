@@ -65,22 +65,22 @@
 #' @examples
 #' set.seed(123)
 #' # Simulated main-study data: 80 subjects, 1 exposure
-#' z.main <- matrix(rnorm(80), ncol = 1)
-#' colnames(z.main) <- "sbp"
-#' Y <- rpois(80, lambda = exp(0.3 * z.main))
+#' z.main = matrix(rnorm(80), ncol = 1)
+#' colnames(z.main) = "sbp"
+#' Y  = rpois(80, lambda = exp(0.3 * z.main))
 #'
 #' # Reliability study: 40 subjects, 2 replicates
-#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
-#' r <- c(rep(1, 80), rep(2, 40)) # replicate counts
-#' indicator <- c(rep(1, 80), rep(0, 40))
+#' z.rep = list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' r = c(rep(1, 80), rep(2, 40)) # replicate counts
+#' indicator = c(rep(1, 80), rep(0, 40))
 #'
 #' # Standardize data
-#' sdz <- apply(z.main, 2, sd)
-#' z.main.std <- scale(z.main)
-#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#' sdz = apply(z.main, 2, sd)
+#' z.main.std = scale(z.main)
+#' z.rep.std = list(sbp = scale(z.rep$sbp))
 #'
 #' # Apply regression calibration for Poisson regression
-#' fit <- reg_calibration_ex_poisson(
+#' fit = reg_calibration_ex_poisson(
 #'   z.main.std = z.main.std,
 #'   z.rep.std  = z.rep.std,
 #'   r          = r,
@@ -99,18 +99,14 @@
 
 reg_calibration_ex_poisson = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y, muz, muw, sdz, sdw, indicator) {
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  # Basic dimensions
   nm = nrow(z.main.std) # number of subjects in the main study
   nr = sum(indicator == 0) # number of subjects in the reliability study
   n = nm+nr # total number of subjects (main + reliability)
   t = ncol(z.main.std) # number of variables in z.main.std
 
 
-  # -----------------------------------------------
-  # 1) CASE 1:  W.std == NULL
-  # -----------------------------------------------
+  # W.std == NULL
   if (is.null(W.main.std)) {
 
     # Compute means for each subject from the reliability study (with replicates).
@@ -160,7 +156,7 @@ reg_calibration_ex_poisson = function(z.main.std, z.rep.std, r, W.main.std = NUL
     sigmawithin = sigma
     icc = sigmax%*%solve(sigmaz)
 
-    # -----  Fit Corrected Outcome Model -----
+    # Fit Corrected Outcome Model
     xhat_df = as.data.frame(xhat)
     colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
     model_df = data.frame(Y = Y, xhat_df)
@@ -192,10 +188,7 @@ reg_calibration_ex_poisson = function(z.main.std, z.rep.std, r, W.main.std = NUL
 
 
   else {
-    # -----------------------------------------------
-    # 2) CASE 2:  W.std != NULL
-    # -----------------------------------------------
-
+    # W.std != NULL
     #restricted to the reliability subset
     nm = sum(indicator)
     nr = n-nm
@@ -240,15 +233,14 @@ reg_calibration_ex_poisson = function(z.main.std, z.rep.std, r, W.main.std = NUL
     colnames(xhat) = colnames(z.main.std)
     colnames(W.main.std) = colnames(W.main.std)
 
-    # -----  Fit Corrected Outcome Model -----
-
+    # Fit Corrected Outcome Model
     # Fit logistic regression on the corrected exposures xhat + confounders Wmain
-    xhat_df <- as.data.frame(xhat)
-    W_df <- as.data.frame(W.main.std)
-    colnames(xhat_df) <- colnames(z.main.std)   # e.g. "sbp", "chol"
-    colnames(W_df) <- colnames(W.main.std)
-    model_df <- data.frame(Y = Y, xhat_df, W_df)
-    fit2 <- glm(Y ~ ., data = model_df, family = poisson(link = "log"))
+    xhat_df = as.data.frame(xhat)
+    W_df = as.data.frame(W.main.std)
+    colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
+    colnames(W_df) = colnames(W.main.std)
+    model_df = data.frame(Y = Y, xhat_df, W_df)
+    fit2 = glm(Y ~ ., data = model_df, family = poisson(link = "log"))
     beta.fit2 = fit2$coefficients
     # A "sandwich" variance that partially adjusts for regression aspects but not fully for the measurement model
     var2 = sandwich::sandwich(fit2)

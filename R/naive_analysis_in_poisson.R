@@ -33,13 +33,13 @@
 #' @examples
 #' set.seed(123)
 #' # Simulated replicate data: 100 subjects, 1 exposure with 2 replicates
-#' z.rep <- cbind(rnorm(100), rnorm(100))
-#' zbar <- rowMeans(z.rep)
-#' Y <- rpois(100, exp(0.3 + 0.5 * zbar))
-#' sdz <- sd(zbar)
+#' z.rep = cbind(rnorm(100), rnorm(100))
+#' zbar = rowMeans(z.rep)
+#' Y = rpois(100, exp(0.3 + 0.5 * zbar))
+#' sdz = sd(zbar)
 #'
 #' # Run naive Poisson regression
-#' res <- naive_analysis_in_poisson(
+#' res = naive_analysis_in_poisson(
 #'   Y = Y,
 #'   zbar = scale(zbar),
 #'   W.std = NULL,

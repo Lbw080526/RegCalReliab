@@ -40,13 +40,13 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated main-study data: 100 subjects, 1 exposure
-#' z <- matrix(rnorm(100), ncol = 1)
-#' colnames(z) <- "sbp"
-#' Y <- rbinom(100, 1, plogis(0.3 * z))
-#' sdz <- apply(z, 2, sd)
+#' z = matrix(rnorm(100), ncol = 1)
+#' colnames(z) = "sbp"
+#' Y = rbinom(100, 1, plogis(0.3 * z))
+#' sdz = apply(z, 2, sd)
 #'
 #' # Run naive logistic regression ignoring measurement error
-#' res <- naive_analysis_ex_log(
+#' res = naive_analysis_ex_log(
 #'   z.main.std = scale(z),
 #'   W.main.std = NULL,
 #'   Y = Y,

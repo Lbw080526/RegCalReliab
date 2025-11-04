@@ -61,22 +61,22 @@
 #' @examples
 #' set.seed(123)
 #' # Simulated main-study data: 80 subjects, 1 exposure
-#' z.main <- matrix(rnorm(80), ncol = 1)
-#' colnames(z.main) <- "sbp"
-#' Y <- rbinom(80, 1, plogis(0.3 * z.main))
+#' z.main = matrix(rnorm(80), ncol = 1)
+#' colnames(z.main) = "sbp"
+#' Y = rbinom(80, 1, plogis(0.3 * z.main))
 #'
 #' # Reliability study: 40 subjects, 2 replicates
-#' z.rep <- list(sbp = matrix(rnorm(40 * 2), nrow = 40))
-#' r <- c(rep(1, 80), rep(2, 40)) # replicate counts
-#' indicator <- c(rep(1, 80), rep(0, 40))
+#' z.rep = list(sbp = matrix(rnorm(40 * 2), nrow = 40))
+#' r = c(rep(1, 80), rep(2, 40)) # replicate counts
+#' indicator = c(rep(1, 80), rep(0, 40))
 #'
 #' # Standardize data
-#' sdz <- apply(z.main, 2, sd)
-#' z.main.std <- scale(z.main)
-#' z.rep.std <- list(sbp = scale(z.rep$sbp))
+#' sdz = apply(z.main, 2, sd)
+#' z.main.std = scale(z.main)
+#' z.rep.std = list(sbp = scale(z.rep$sbp))
 #'
 #' # Apply regression calibration
-#' fit <- reg_calibration_ex_log(
+#' fit = reg_calibration_ex_log(
 #'   z.main.std = z.main.std,
 #'   z.rep.std  = z.rep.std,
 #'   r          = r,
@@ -97,18 +97,13 @@
 
 reg_calibration_ex_log = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y, muz, muw, sdz, sdw, indicator) {
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+ # Basic dimensions
   nm = nrow(z.main.std) # number of subjects in the main study
   nr = sum(indicator == 0) # number of subjects in the reliability study
   n = nm+nr # total number of subjects (main + reliability)
   t = ncol(z.main.std) # number of variables in z.main.std
 
-
-  # -----------------------------------------------
-  # 1) CASE 1:  W.std == NULL
-  # -----------------------------------------------
+ # W.std == NULL
   if (is.null(W.main.std)) {
 
     # Compute means for each subject from the reliability study (with replicates).
@@ -157,8 +152,7 @@ reg_calibration_ex_log = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y
     sigmawithin = sigma
     icc = sigmax%*%solve(sigmaz)
 
-# -----  Fit Corrected Outcome Model -----
-
+ # Fit Corrected Outcome Model
     # Turn calibrated exposures into a data frame with correct names
     xhat_df = as.data.frame(xhat)
     colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
@@ -173,7 +167,6 @@ reg_calibration_ex_log = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y
     CI.low = tab2[,1]-1.96*tab2[,2]
     CI.high = tab2[,1]+1.96*tab2[,2]
     tab2 = cbind(tab2,exp(cbind(OR = tab2[, 1],CI.low,CI.high)))
-
 
     return(list(
       `Corrected estimates` = tab2,
@@ -193,9 +186,7 @@ reg_calibration_ex_log = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y
 
 
   else {
-    # -----------------------------------------------
-    # 2) CASE 2:  W.std != NULL
-    # -----------------------------------------------
+ # CASE 2:  W.std != NULL
 
     #restricted to the reliability subset
     nm = sum(indicator)
@@ -242,16 +233,16 @@ reg_calibration_ex_log = function(z.main.std, z.rep.std, r, W.main.std = NULL, Y
     colnames(xhat) = colnames(z.main.std)
     colnames(W.main.std) = colnames(W.main.std)
 
-    # -----  Fit Corrected Outcome Model -----
+ # Fit Corrected Outcome Model
 
     # Fit logistic regression on the corrected exposures xhat + confounders Wmain
     # Turn calibrated exposures into a data frame with correct names
-    xhat_df <- as.data.frame(xhat)
-    W_df <- as.data.frame(W.main.std)
-    colnames(xhat_df) <- colnames(z.main.std)   # e.g. "sbp", "chol"
-    colnames(W_df) <- colnames(W.main.std)
-    model_df <- data.frame(Y = Y, xhat_df, W_df)
-    fit2 <- glm(Y ~ ., data = model_df, family = "binomial")
+    xhat_df = as.data.frame(xhat)
+    W_df = as.data.frame(W.main.std)
+    colnames(xhat_df) = colnames(z.main.std)   # e.g. "sbp", "chol"
+    colnames(W_df) = colnames(W.main.std)
+    model_df = data.frame(Y = Y, xhat_df, W_df)
+    fit2 = glm(Y ~ ., data = model_df, family = "binomial")
     beta.fit2 = fit2$coefficients
 
     # A "sandwich" variance that partially adjusts for regression aspects but not fully for the measurement model

@@ -35,18 +35,18 @@ RC_EX_logistic = function(formula,
                            link = "logistic",
                            return_details = FALSE) {
 
-  # ---- 0) Validate link ----
+  # Validate link
   if (!is.character(link) || length(link) != 1) {
     stop("`link` must be a single character string such as 'logistic', 'logit', or 'probit'.")
   }
 
-  # Accept "logistic" as an alias for "logit"
+  # Accept "logistic" or "logit"
   if (link == "logistic") link = "logit"
 
   # Construct the binomial family with the chosen link
   family = binomial(link = link)
 
-  # ---- 1) Normalize formula to string and parse ----
+  # Normalize formula to string and parse
   formula_str = if (inherits(formula, "formula")) {
     paste(deparse(formula), collapse = "")
   } else {
@@ -60,7 +60,7 @@ RC_EX_logistic = function(formula,
   )
   # parsed returns: main_data (unchanged), Y, W, z.main, z.rep, r
 
-  # ---- 2) Prepare & standardize ----
+  # Prepare & standardize
   prep = prepare_data_ex(
     z.main = parsed$z.main,
     r      = parsed$r,
@@ -68,10 +68,8 @@ RC_EX_logistic = function(formula,
     W      = parsed$W,
     Y      = parsed$Y
   )
-  # prep returns: z.main.std, z.rep.std, r, (optional) W.main.std, Y, indicator,
-  #               means = list(z=..., w=...), sds = list(z=..., w=...)
 
-  # ---- 3) Naive logistic regression (for reference) ----
+  # Naive logistic regression
   naive = naive_analysis_ex_log(
     z.main.std  = prep$z.main.std,
     W.main.std  = prep$W.main.std,
@@ -80,7 +78,7 @@ RC_EX_logistic = function(formula,
     sdw         = prep$sds[["w"]]
   )
 
-  # ---- 4) Regression calibration (xhat, etc.) ----
+  # Regression calibration
   rc = reg_calibration_ex_log(
     z.main.std   = prep$z.main.std,
     z.rep.std    = prep$z.rep.std,
@@ -95,7 +93,7 @@ RC_EX_logistic = function(formula,
   )
 
 
-  sand <- sandwich_estimator_ex_log(
+  sand = sandwich_estimator_ex_log(
     xhat        = rc$xhat,
     z.main.std  = prep$z.main.std,
     z.rep.std   = prep$z.rep.std,
@@ -116,20 +114,20 @@ RC_EX_logistic = function(formula,
     zbar        = rc$zbar
   )
 
-  out <- list(
+  out = list(
     uncorrected = naive[["Naive estimates"]],
     corrected   = sand[["Sandwich Corrected estimates"]]
   )
 
   if (return_details) {
-    out$details <- list(
+    out$details = list(
       parsed      = parsed,
       prepared    = prep,
       rc          = rc
     )
   }
 
-  class(out) <- c("RC_EX_logistic_result", class(out))
+  class(out) = c("RC_EX_logistic_result", class(out))
   out
 }
 

@@ -30,38 +30,35 @@
 #' )
 #' @noRd
 
-RC_EX_Linear <- function(formula,
+RC_EX_Linear = function(formula,
                          main_data,
                          rep_data,
                          link = "linear",
                          return_details = FALSE) {
 
-  # ---- 0) Validate link ----
+  # Validate link
   if (!is.character(link) || length(link) != 1) {
     stop("`link` must be a single character string such as 'linear' or 'identity'.")
   }
 
-  # Treat 'linear' as an alias for 'identity'
-  if (link == "linear") link <- "identity"
+  if (link == "linear") link = "identity"
+  family = gaussian(link = link)
 
-  # Build the gaussian family with the chosen link
-  family <- gaussian(link = link)
-
-  # ---- 1) Normalize formula to string and parse ----
-  formula_str <- if (inherits(formula, "formula")) {
+  # Normalize formula to string and parse
+  formula_str = if (inherits(formula, "formula")) {
     paste(deparse(formula), collapse = "")
   } else {
     paste(as.character(formula), collapse = "")
   }
 
-  parsed <- parse_and_extract(
+  parsed = parse_and_extract(
     main_data     = main_data,
     external_data = rep_data,
     formula_str   = formula_str
   )
 
-  # ---- 2) Prepare & standardize ----
-  prep <- prepare_data_ex(
+  # Prepare & standardize
+  prep = prepare_data_ex(
     z.main = parsed$z.main,
     r      = parsed$r,
     z.rep  = parsed$z.rep,
@@ -69,8 +66,8 @@ RC_EX_Linear <- function(formula,
     Y      = parsed$Y
   )
 
-  # ---- 3) Naive linear regression ----
-  naive <- naive_analysis_ex_linear(
+  # Naive linear regression
+  naive = naive_analysis_ex_linear(
     z.main.std  = prep$z.main.std,
     W.main.std  = prep$W.main.std,
     Y           = prep$Y,
@@ -78,8 +75,8 @@ RC_EX_Linear <- function(formula,
     sdw         = prep$sds[["w"]]
   )
 
-  # ---- 4) Regression calibration ----
-  rc <- reg_calibration_ex_linear(
+  # Regression calibration
+  rc = reg_calibration_ex_linear(
     z.main.std   = prep$z.main.std,
     z.rep.std    = prep$z.rep.std,
     r            = prep$r,
@@ -92,8 +89,8 @@ RC_EX_Linear <- function(formula,
     indicator    = prep$indicator
   )
 
-  # ---- 5) Sandwich variance estimation ----
-  sand <- sandwich_estimator_ex_linear(
+  # Sandwich variance estimation
+  sand = sandwich_estimator_ex_linear(
     xhat        = rc$xhat,
     z.main.std  = prep$z.main.std,
     z.rep.std   = prep$z.rep.std,
@@ -111,19 +108,19 @@ RC_EX_Linear <- function(formula,
     fit2        = rc$fit2
   )
 
-  out <- list(
+  out = list(
     uncorrected = naive[["Naive estimates"]],
     corrected   = sand[["Sandwich Corrected estimates"]]
   )
 
   if (return_details) {
-    out$details <- list(
+    out$details = list(
       parsed   = parsed,
       prepared = prep,
       rc       = rc
     )
   }
 
-  class(out) <- c("RC_EX_linear_result", class(out))
+  class(out) = c("RC_EX_linear_result", class(out))
   out
 }

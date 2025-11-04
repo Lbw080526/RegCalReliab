@@ -32,47 +32,41 @@
 #'
 #' @noRd
 
-RC_IN_Linear <- function(formula,
+RC_IN_Linear = function(formula,
                          main_data,
                          link = "linear",
                          return_details = FALSE) {
 
-  # ---- 0) Validate link ----
   if (!is.character(link) || length(link) != 1) {
     stop("`link` must be a single character string such as 'linear' or 'identity'.")
   }
 
-  # Treat 'linear' as an alias for 'identity'
-  if (link == "linear") link <- "identity"
 
-  # Build the gaussian family with the chosen link
-  family <- gaussian(link = link)
+  if (link == "linear") link = "identity"
+
+  family = gaussian(link = link)
 
 
-  # ---- 1) Normalize formula to string and parse ----
-  formula_str <- if (inherits(formula, "formula")) {
+  formula_str = if (inherits(formula, "formula")) {
     paste(deparse(formula), collapse = "")
   } else {
     as.character(formula)
   }
 
-  parsed <- parse_and_extract_internal(
+  parsed = parse_and_extract_internal(
     main_data   = main_data,
     formula_str = formula_str
   )
   # parsed returns: r, z, W, Y
 
-  # ---- 2) Prepare & standardize ----
-  prep <- prepare_data_in(
+  prep = prepare_data_in(
     r = parsed$r,
     z = parsed$z,
     W = parsed$W,
     Y = parsed$Y
   )
-  # prep returns: zbar, z.std, W.std, sds, means, Y, r
 
-  # ---- 3) Naive linear regression ----
-  naive <- naive_analysis_in_linear(
+  naive = naive_analysis_in_linear(
     Y    = prep$Y,
     zbar = prep$zbar,
     W.std = prep$W.std,
@@ -80,8 +74,7 @@ RC_IN_Linear <- function(formula,
     sdw  = prep$sds[["w"]]
   )
 
-  # ---- 4) Regression calibration ----
-  rc <- reg_calibration_in_linear(
+  rc = reg_calibration_in_linear(
     Y    = prep$Y,
     var1 = naive$var1,
     zbar = prep$zbar,
@@ -94,8 +87,7 @@ RC_IN_Linear <- function(formula,
     r     = prep$r
   )
 
-  # ---- 5) Sandwich variance estimation ----
-  sand <- sandwich_estimator_in_linear(
+  sand = sandwich_estimator_in_linear(
     xhat        = rc$xhat,
     zbar        = prep$zbar,
     z.std       = prep$z.std,
@@ -116,19 +108,19 @@ RC_IN_Linear <- function(formula,
     v           = rc$v
   )
 
-  out <- list(
+  out = list(
     uncorrected = naive[["Naive estimates"]],
     corrected   = sand[["Sandwich Corrected estimates"]]
   )
 
   if (return_details) {
-    out$details <- list(
+    out$details = list(
       parsed   = parsed,
       prepared = prep,
       rc       = rc
     )
   }
 
-  class(out) <- c("RC_IN_linear_result", class(out))
+  class(out) = c("RC_IN_linear_result", class(out))
   out
 }

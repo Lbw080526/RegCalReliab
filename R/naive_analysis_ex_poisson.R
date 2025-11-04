@@ -40,13 +40,13 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated main-study data: 100 subjects, 1 exposure
-#' z <- matrix(rnorm(100), ncol = 1)
-#' colnames(z) <- "exposure"
-#' Y <- rpois(100, lambda = exp(0.2 + 0.3 * z))
-#' sdz <- apply(z, 2, sd)
+#' z = matrix(rnorm(100), ncol = 1)
+#' colnames(z) = "exposure"
+#' Y = rpois(100, lambda = exp(0.2 + 0.3 * z))
+#' sdz = apply(z, 2, sd)
 #'
 #' # Run naive Poisson regression ignoring measurement error
-#' res <- naive_analysis_ex_poisson(
+#' res = naive_analysis_ex_poisson(
 #'   z.main.std = scale(z),
 #'   W.main.std = NULL,
 #'   Y = Y,

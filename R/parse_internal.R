@@ -25,7 +25,7 @@
 #' @examples
 #' # Example main data with replicates
 #' set.seed(1)
-#' main_df <- data.frame(
+#' main_df = data.frame(
 #'   Y     = rbinom(5, 1, 0.5),
 #'   sbp1  = rnorm(5, 120, 15),
 #'   sbp2  = rnorm(5, 120, 15),
@@ -34,7 +34,7 @@
 #' )
 #'
 #' # Parse formula and extract data (1Z1W example)
-#' parsed <- parse_and_extract_internal(
+#' parsed = parse_and_extract_internal(
 #'   main_data   = main_df,
 #'   formula_str = "Y ~ mysbp(sbp1, sbp2) + age + sex"
 #' )

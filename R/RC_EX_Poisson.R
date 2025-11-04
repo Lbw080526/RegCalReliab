@@ -30,20 +30,18 @@
 #'
 #' @noRd
 
-RC_EX_Poisson <- function(formula,
+RC_EX_Poisson = function(formula,
                           main_data,
                           rep_data,
                           link = "log",
                           return_details = FALSE) {
 
-  # ---- 0) Validate family ----
   if (!is.character(link) || length(link) != 1) {
     stop("`link` must be a single character string such as 'log', 'identity', or 'sqrt'.")
   }
   # Build the Poisson family from the link
   family = poisson(link = link)
 
-  # ---- 1) Normalize formula to string and parse ----
   formula_str = if (inherits(formula, "formula")) {
     paste(deparse(formula), collapse = "")
   } else {
@@ -55,9 +53,8 @@ RC_EX_Poisson <- function(formula,
     external_data = rep_data,
     formula_str   = formula_str
   )
-  # parsed returns: main_data (unchanged), Y, W, z.main, z.rep, r
 
-  # ---- 2) Prepare & standardize ----
+
   prep = prepare_data_ex(
     z.main = parsed$z.main,
     r      = parsed$r,
@@ -66,7 +63,6 @@ RC_EX_Poisson <- function(formula,
     Y      = parsed$Y
   )
 
-  # ---- 3) Naive Poisson regression (for reference) ----
   naive = naive_analysis_ex_poisson(
     z.main.std  = prep$z.main.std,
     W.main.std  = prep$W.main.std,
@@ -75,7 +71,6 @@ RC_EX_Poisson <- function(formula,
     sdw         = prep$sds[["w"]]
   )
 
-  # ---- 4) Regression calibration (xhat, etc.) ----
   rc = reg_calibration_ex_poisson(
     z.main.std   = prep$z.main.std,
     z.rep.std    = prep$z.rep.std,
@@ -89,8 +84,7 @@ RC_EX_Poisson <- function(formula,
     indicator    = prep$indicator
   )
 
-  # ---- 5) Sandwich variance estimation ----
-  sand <- sandwich_estimator_ex_poisson(
+  sand = sandwich_estimator_ex_poisson(
     xhat        = rc$xhat,
     z.main.std  = prep$z.main.std,
     z.rep.std   = prep$z.rep.std,
@@ -116,7 +110,7 @@ RC_EX_Poisson <- function(formula,
   )
 
   if (return_details) {
-    out$details <- list(
+    out$details = list(
       parsed      = parsed,
       prepared    = prep,
       rc          = rc

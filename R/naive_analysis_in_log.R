@@ -38,16 +38,16 @@
 #' @examples
 #' set.seed(1)
 #' # Simulated internal data: 100 subjects, 2 replicates of 1 exposure
-#' z.rep <- cbind(rnorm(100), rnorm(100))
-#' zbar <- rowMeans(z.rep)
-#' Y <- rbinom(100, 1, plogis(0.5 * zbar))
+#' z.rep = cbind(rnorm(100), rnorm(100))
+#' zbar = rowMeans(z.rep)
+#' Y = rbinom(100, 1, plogis(0.5 * zbar))
 #'
 #' # Standardize and get SDs
-#' zbar.std <- scale(zbar)
-#' sdz <- sd(zbar)
+#' zbar.std = scale(zbar)
+#' sdz = sd(zbar)
 #'
 #' # Run naive logistic regression ignoring measurement error
-#' res <- naive_analysis_in_log(
+#' res = naive_analysis_in_log(
 #'   zbar = zbar.std,
 #'   W.std = NULL,
 #'   Y = Y,

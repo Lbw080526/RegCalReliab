@@ -51,25 +51,25 @@
 #' @examples
 #' set.seed(123)
 #' # Main study: 6 subjects, 2 error-prone exposures
-#' z.main <- matrix(rnorm(6 * 2), nrow = 6, ncol = 2)
+#' z.main = matrix(rnorm(6 * 2), nrow = 6, ncol = 2)
 #' colnames(z.main) <- c("sbp", "chol")
 #'
 #' # Reliability study: 4 subjects, each with 2 replicates
-#' z.rep <- list(
+#' z.rep = list(
 #'   sbp  = matrix(rnorm(4 * 2), nrow = 4),
 #'   chol = matrix(rnorm(4 * 2), nrow = 4)
 #' )
 #'
 #' # Replicate counts
-#' r <- rep(2, 4)
+#' r = rep(2, 4)
 #'
 #' # Optional covariates and binary outcome
-#' W <- matrix(rnorm(6 * 2), nrow = 6)
-#' colnames(W) <- c("age", "sex")
-#' Y <- rbinom(6, 1, 0.5)
+#' W = matrix(rnorm(6 * 2), nrow = 6)
+#' colnames(W) = c("age", "sex")
+#' Y = rbinom(6, 1, 0.5)
 #'
 #' # Prepare and standardize data
-#' prep <- prepare_data_ex(z.main = z.main,
+#' prep = prepare_data_ex(z.main = z.main,
 #'                         r = r,
 #'                         z.rep = z.rep,
 #'                         W = W,
@@ -79,7 +79,7 @@
 #' @noRd
 
 
-prepare_data_ex <- function(z.main, r, z.rep, W = NULL, Y) {
+prepare_data_ex = function(z.main, r, z.rep, W = NULL, Y) {
   nm = nrow(z.main)             # main-study sample size
   nr = length(r)                # reliability-study sample size
   r  = c(rep(1, nm), r)         # unify replicate counts: main=1, reliability = r

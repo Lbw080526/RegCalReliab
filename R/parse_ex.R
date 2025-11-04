@@ -27,7 +27,7 @@
 #' @examples
 #' # Example main and external data
 #' set.seed(1)
-#' main_df <- data.frame(
+#' main_df = data.frame(
 #'   Y    = rbinom(5, 1, 0.5),
 #'   sbp  = rnorm(5, 120, 15),
 #'   age  = rnorm(5, 50, 10),

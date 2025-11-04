@@ -56,15 +56,15 @@
 #' @examples
 #' set.seed(123)
 #' # Simulate internal replicate data: 50 subjects, 2 replicates of 1 exposure
-#' z.rep <- cbind(rnorm(50), rnorm(50))
-#' zbar <- rowMeans(z.rep)
-#' Y <- 1 + 0.7 * zbar + rnorm(50)
+#' z.rep = cbind(rnorm(50), rnorm(50))
+#' zbar = rowMeans(z.rep)
+#' Y = 1 + 0.7 * zbar + rnorm(50)
 #'
 #' # Standardize
-#' zbar.std <- scale(zbar)
-#' sdz <- sd(zbar)
-#' z.std <- list(sbp = scale(z.rep))
-#' r <- rep(2, 50)
+#' zbar.std = scale(zbar)
+#' sdz = sd(zbar)
+#' z.std = list(sbp = scale(z.rep))
+#' r = rep(2, 50)
 #'
 #' # (In practice, run reg_calibration_in_linear() first to obtain xhat, fit2, etc.)
 #' # Here we show a simplified call with mock objects:
@@ -86,26 +86,24 @@
 sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std = NULL,sigma,
                                        sigmawithin,sigmazstar,sigmazhat, sdz,sdw,muz,muw,fit2,v){
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  # Basic dimensions
   n = length(r)
   t = length(z.std)
   q = if (is.null(W.std)) 0 else ncol(W.std)
 
-  muz_std <- colMeans(zbar, na.rm = TRUE)  # length t
+  muz_std = colMeans(zbar, na.rm = TRUE)  # length t
 
   if (!is.null(W.std)) {
-    muw_std <- colMeans(W.std, na.rm = TRUE)  # length q
+    muw_std = colMeans(W.std, na.rm = TRUE)  # length q
   } else {
-    muw_std <- NULL
+    muw_std = NULL
   }
 
   if(is.null(W.std)){
 
     #p = as.vector(exp(beta.fit2 %*% t(cbind(1,xhat)))/(1+exp(beta.fit2 %*% t(cbind(1,xhat)))))
-    mu1    <- as.vector(cbind(1, xhat) %*% beta.fit2)
-    resid <- Y - mu1
+    mu1    = as.vector(cbind(1, xhat) %*% beta.fit2)
+    resid = Y - mu1
 
     sigmaz.inv = solve(sigmazstar)
 
@@ -156,10 +154,10 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
     m = (t)*(t+1)/2+(t*(t+1))/2 #number of the covariance estimates
     s = t+1 #number of beta estimates
 
-    B_big <- matrix(unlist(if (t>1) list(db.x,ob.x,db.0,ob.0) else list(db.x,db.0)),
+    B_big = matrix(unlist(if (t>1) list(db.x,ob.x,db.0,ob.0) else list(db.x,db.0)),
                     nrow = n, byrow = FALSE)
 
-    b <- lapply(seq_len(m), function(i)
+    b = lapply(seq_len(m), function(i)
       B_big[, ((i - 1) * t + 1):(i * t), drop = FALSE])
 
     #d = as.matrix(p*(1-p)%*%t(beta.fit2[2:(t+1)]))/n
@@ -168,7 +166,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     #bstar = sapply(b,function(x) -rowSums(x*d))
     bstar = sapply(b, function(x) {
-      if (is.null(dim(x))) x <- matrix(x, nrow = n)  # <-- add this
+      if (is.null(dim(x))) x = matrix(x, nrow = n)  # =- add this
       -rowSums(x * d_linear)
     })
 
@@ -178,7 +176,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     #w = diag(p * (1 - p))
     #Astar = t(cbind(1,xhat)) %*% w %*% cbind(1,xhat) /n
-    Astar <- crossprod(cbind(1, xhat)) / n
+    Astar = crossprod(cbind(1, xhat)) / n
 
 
     A = rbind(cbind(diag(rep(-1,m)),
@@ -207,18 +205,18 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     ###betas
     #gi.beta = cbind(1,xhat)*(Y-p) / n
-    gi.beta <- cbind(1, xhat) * resid / n
+    gi.beta = cbind(1, xhat) * resid / n
 
 
     gi.1 = if(t==1){
       cbind(dmgi,dgi,gi.beta)
     }else cbind(dmgi,dgi,matrix(unlist(ogi),nrow=n),gi.beta)
-    B1 <- crossprod(gi.1)
+    B1 = crossprod(gi.1)
 
     gi.2 = if(t==1){
       dgi.0
     }else cbind(dgi.0,matrix(unlist(ogi.0),nrow=n))
-    B2   <- crossprod(gi.2)
+    B2   = crossprod(gi.2)
 
     m1 = (t)*(t+1)/2
     m2 = t*(t+1)/2
@@ -228,15 +226,15 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     cov2 = solve(A)%*%B%*%t(solve(A))
 
-    idx_beta <- (t + m + 1):(t + m + s)                             # <<< FIX
-    tab3     <- summary(fit2)$coefficients
-    tab3[, 2] <- sqrt(diag(cov2)[idx_beta])
-    tab3[, 1:2] <- tab3[, 1:2] / c(1, sdz)
-    CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
-    CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
-    tab3[, 3] <- tab3[, 1] / tab3[, 2]
-    tab3[, 4] <- 2 * pnorm(tab3[, 3], lower.tail = FALSE)
-    tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
+    idx_beta = (t + m + 1):(t + m + s)                             # <<< FIX
+    tab3     = summary(fit2)$coefficients
+    tab3[, 2] = sqrt(diag(cov2)[idx_beta])
+    tab3[, 1:2] = tab3[, 1:2] / c(1, sdz)
+    CI.low  = tab3[, 1] - 1.96 * tab3[, 2]
+    CI.high = tab3[, 1] + 1.96 * tab3[, 2]
+    tab3[, 3] = tab3[, 1] / tab3[, 2]
+    tab3[, 4] = 2 * pnorm(tab3[, 3], lower.tail = FALSE)
+    tab3 = cbind(tab3, CI.low = CI.low, CI.high = CI.high)
 
     return(list(`Sandwich Corrected estimates` = tab3))
 
@@ -245,8 +243,8 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
   } else{
 
     #p = as.vector(exp(beta.fit2 %*% t(cbind(1,xhat,W.std)))/(1+exp(beta.fit2 %*% t(cbind(1,xhat,W.std)))))
-    mu1    <- as.vector(cbind(1, xhat, W.std) %*% beta.fit2)   # <<< FIX
-    resid <- Y - mu1                                           # <<< FIX
+    mu1    = as.vector(cbind(1, xhat, W.std) %*% beta.fit2)   # <<< FIX
+    resid = Y - mu1                                           # <<< FIX
     Z = t(cbind(zbar,W.std))
 
     m = matrix(0,nrow = t+q,ncol = t+q)
@@ -268,7 +266,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
                                                               v12star%*%solve(matrix(sigmazhat[,y],ncol=t+q))%*%ddm.x[[x]]%*%solve(matrix(sigmazhat[,y],ncol=t+q)))%*%Z[,y])),simplify = F)
 
     ###off-diag
-    if(t>1){odv.x<-sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
+    if(t>1){odv.x=sapply(1:(t-1),function(x) sapply(min((x+1),t):t,function(y){
       c[x,y] = c[x,y]+1
       c[y,x] = c[y,x]+1
       c
@@ -311,7 +309,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
       t(sapply(1:n,function(u) t((-v12star%*%solve(matrix(sigmazhat[,u],ncol=t+q))%*%ddm.w[[x]]%*%solve(matrix(sigmazhat[,u],ncol=t+q)))%*%Z[,u]))),simplify = F)
 
     ###off-diag
-    if(q>1){odm.w<-sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
+    if(q>1){odm.w=sapply((t+1):(t+q-1),function(x) sapply(min((x+1),t+q):(t+q),function(y){
       m[x,y] = m[x,y]+1
       m[y,x] = m[y,x]+1
       m
@@ -330,17 +328,17 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
     m = (t+q)*(t+q+1)/2+(t*(t+1))/2 #number of the covariance estimates
     s = t+q+1 #number of beta estimates
 
-    B_big <- matrix(unlist(
+    B_big = matrix(unlist(
       if (t > 1 & q > 1)    list(db.x, db.w, ob.x, ob.xw, ob.w, db.0, ob.0) else
         if (q > 1)            list(db.x, db.w, ob.xw, ob.w, db.0) else
           if (t > 1)            list(db.x, db.w, ob.x, ob.xw, db.0, ob.0) else
             list(db.x, db.w, ob.xw, db.0)
     ), nrow = n, byrow = FALSE)
 
-    chunk <- t                                   # 关键：每块只要 t 列
+    chunk = t
     stopifnot(ncol(B_big) %% chunk == 0)
-    m <- ncol(B_big) / chunk                     # （可选）若你前面定义的 m 不一致，就用这个覆盖
-    b <- lapply(seq_len(m), function(i)
+    m = ncol(B_big) / chunk
+    b = lapply(seq_len(m), function(i)
       B_big[, ((i - 1) * chunk + 1):(i * chunk), drop = FALSE]
     )
 
@@ -351,7 +349,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     #bstar = sapply(b,function(x) -rowSums(x*d))
     bstar = sapply(b, function(x) {
-      if (is.null(dim(x))) x <- matrix(x, nrow = n)  # <-- add this
+      if (is.null(dim(x))) x = matrix(x, nrow = n)  # =- add this
       -rowSums(x * d)
     })
 
@@ -362,7 +360,7 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     # w = diag(p * (1 - p))
     # Astar = t(cbind(1,xhat, W.std)) %*% w %*% cbind(1,xhat, W.std)/n
-    Astar <- crossprod(cbind(1, xhat, W.std)) / n
+    Astar = crossprod(cbind(1, xhat, W.std)) / n
 
 
     A = rbind(cbind(diag(rep(-1,m)),
@@ -392,15 +390,15 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     ###betas
     #gi.beta = cbind(1,xhat,W.std)*(Y-p)/n
-    gi.beta <- cbind(1, xhat, W.std) * resid / n
+    gi.beta = cbind(1, xhat, W.std) * resid / n
 
     gi.1 = cbind(dmgi,dgi,matrix(unlist(ogi),nrow=n),gi.beta)
-    B1   <- crossprod(gi.1)
+    B1   = crossprod(gi.1)
 
     gi.2 = if(t==1){
       dgi.0
     }else cbind(dgi.0,matrix(unlist(ogi.0),nrow=n))
-    B2   <- crossprod(gi.2)
+    B2   = crossprod(gi.2)
 
     m1 = (t+q)*(t+q+1)/2
     m2 = t*(t+1)/2
@@ -410,15 +408,15 @@ sandwich_estimator_in_linear = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.
 
     cov2 = solve(A)%*%B%*%t(solve(A))
 
-    idx_beta <- (t + q + m + 1):(t + q + m + s)                       # <<< FIX
-    tab3     <- summary(fit2)$coefficients
-    tab3[, 2] <- sqrt(diag(cov2)[idx_beta])
-    tab3[, 1:2] <- tab3[, 1:2] / c(1, sdz, sdw)
-    CI.low  <- tab3[, 1] - 1.96 * tab3[, 2]
-    CI.high <- tab3[, 1] + 1.96 * tab3[, 2]
-    tab3[, 3] <- tab3[, 1] / tab3[, 2]
-    tab3[, 4] <- 2 * pnorm(tab3[, 3], lower.tail = FALSE)
-    tab3 <- cbind(tab3, CI.low = CI.low, CI.high = CI.high)
+    idx_beta = (t + q + m + 1):(t + q + m + s)
+    tab3     = summary(fit2)$coefficients
+    tab3[, 2] = sqrt(diag(cov2)[idx_beta])
+    tab3[, 1:2] = tab3[, 1:2] / c(1, sdz, sdw)
+    CI.low  = tab3[, 1] - 1.96 * tab3[, 2]
+    CI.high = tab3[, 1] + 1.96 * tab3[, 2]
+    tab3[, 3] = tab3[, 1] / tab3[, 2]
+    tab3[, 4] = 2 * pnorm(tab3[, 3], lower.tail = FALSE)
+    tab3 = cbind(tab3, CI.low = CI.low, CI.high = CI.high)
 
     return(list(`Sandwich Corrected estimates` = tab3))
 

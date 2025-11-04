@@ -32,33 +32,30 @@
 #'
 #' @noRd
 
-RC_IN_Poisson <- function(formula,
+RC_IN_Poisson = function(formula,
                           main_data,
                           link = "log",
                           return_details = FALSE) {
 
-  # ---- 0) Validate family ----
   if (!is.character(link) || length(link) != 1) {
     stop("`link` must be a single character string such as 'log', 'identity', or 'sqrt'.")
   }
   # Build the Poisson family from the link
   family = poisson(link = link)
 
-  # ---- 1) Normalize formula to string and parse ----
-  formula_str <- if (inherits(formula, "formula")) {
+  formula_str = if (inherits(formula, "formula")) {
     paste(deparse(formula), collapse = "")
   } else {
     as.character(formula)
   }
 
-  parsed <- parse_and_extract_internal(
+  parsed = parse_and_extract_internal(
     main_data   = main_data,
     formula_str = formula_str
   )
   # parsed returns: r, z, W, Y
 
-  # ---- 2) Prepare & standardize ----
-  prep <- prepare_data_in(
+  prep = prepare_data_in(
     r = parsed$r,
     z = parsed$z,
     W = parsed$W,
@@ -66,8 +63,7 @@ RC_IN_Poisson <- function(formula,
   )
   # prep returns: zbar, z.std, W.std, sds, means, Y, r
 
-  # ---- 3) Naive Poisson regression ----
-  naive <- naive_analysis_in_poisson(
+  naive = naive_analysis_in_poisson(
     Y     = prep$Y,
     zbar  = prep$zbar,
     W.std = prep$W.std,
@@ -75,8 +71,7 @@ RC_IN_Poisson <- function(formula,
     sdw   = prep$sds[["w"]]
   )
 
-  # ---- 4) Regression calibration ----
-  rc <- reg_calibration_in_poisson(
+  rc = reg_calibration_in_poisson(
     Y     = prep$Y,
     var1  = naive$var1,
     zbar  = prep$zbar,
@@ -89,8 +84,7 @@ RC_IN_Poisson <- function(formula,
     r     = prep$r
   )
 
-  # ---- 5) Sandwich variance estimation ----
-  sand <- sandwich_estimator_in_poisson(
+  sand = sandwich_estimator_in_poisson(
     xhat        = rc$xhat,
     zbar        = prep$zbar,
     z.std       = prep$z.std,
@@ -111,19 +105,19 @@ RC_IN_Poisson <- function(formula,
     v           = rc$v
   )
 
-  out <- list(
+  out = list(
     uncorrected = naive[["Naive estimates"]],
     corrected   = sand[["Sandwich Corrected estimates"]]
   )
 
   if (return_details) {
-    out$details <- list(
+    out$details = list(
       parsed   = parsed,
       prepared = prep,
       rc       = rc
     )
   }
 
-  class(out) <- c("RC_IN_poisson_result", class(out))
+  class(out) = c("RC_IN_poisson_result", class(out))
   out
 }

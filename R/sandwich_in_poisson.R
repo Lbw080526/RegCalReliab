@@ -87,9 +87,7 @@
 sandwich_estimator_in_poisson = function(xhat,zbar,z.std,r,Y,v12star,beta.fit2,W.std = NULL,sigma,
                                        sigmawithin,sigmazstar,sigmazhat, sdz,sdw,muz,muw,fit2,v){
 
-  # -----------------------------------------------
-  # 0) Basic dimensions
-  # -----------------------------------------------
+  #Basic dimensions
   n = length(r)
   t = length(z.std)
   q = ncol(W.std)
